@@ -8,4 +8,5 @@ public interface NeuralNetwork {
 
     public Tensor executeModelFromByteArray(byte[] graphDef, Tensor input);
 
+    public Tensor byteBufferToTensor(byte[] imageBytes);
 }

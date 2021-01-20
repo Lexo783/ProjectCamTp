@@ -5,13 +5,14 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.nio.file.Files;
 
 public class FileSelector {
 
     private final DirectoryChooser directoryChooser = new DirectoryChooser();
     private final FileChooser fileChooser = new FileChooser();
 
-    public File selectFiles(Stage primaryStage){
+    public File selectFile(Stage primaryStage){
         fileChooser.setTitle("Select");
         return fileChooser.showOpenDialog(primaryStage);
     }

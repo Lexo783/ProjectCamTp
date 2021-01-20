@@ -1,6 +1,9 @@
 package Launcher;
 
 import Services.FileSelector;
+import Services.ImageRecognition;
+import Services.NeuralNetwork;
+import TFUtils.TFUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -11,18 +14,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
 import java.io.File;
-import java.nio.file.Files;
 
 public class Launcher extends Application {
 
-    private FileSelector fileSelector;
+    private final FileSelector fileSelector = new FileSelector();
+    private ImageRecognition imageRecognition = new ImageRecognition();
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -37,8 +37,8 @@ public class Launcher extends Application {
         btn.setOnAction((action) -> {
             System.out.println("Hello World!");
 
-            File file = fileSelector.selectFiles(primaryStage);
-
+            File file = fileSelector.selectFile(primaryStage);
+            imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
         });
 
         // create a textfield
@@ -70,13 +70,5 @@ public class Launcher extends Application {
         root.getChildren().add(imageView);
         primaryStage.setScene(new Scene(root, 600, 600));
         primaryStage.show();
-    }
-
-    private void configuringDirectoryChooser(DirectoryChooser directoryChooser) {
-        // Set title for DirectoryChooser
-        directoryChooser.setTitle("Select Some Directories");
-
-        // Set Initial Directory
-        directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
     }
 }
