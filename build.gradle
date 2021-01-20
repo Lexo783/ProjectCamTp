@@ -4,7 +4,7 @@ plugins {
     id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
-mainClassName = 'launcher.Launcher'
+mainClassName = 'Launcher.Launcher'
 group 'org.example'
 version '1.0-SNAPSHOT'
 
