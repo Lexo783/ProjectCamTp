@@ -13,10 +13,10 @@ import java.util.Objects;
 public class ImageRecognition {
 
     /**
-     * file             :
-     * fileTensorflow   :
-     * NeuralNetwork    :
-     * byteFile         :
+     * file             : image upload
+     * fileTensorflow   : le tensorflow_inception pour faire marcher l'IA
+     * NeuralNetwork    : L'IA
+     * byteFile         : les Byte de l'image actuelle
      */
     private File file;
     private File fileTensorflow;
@@ -30,6 +30,7 @@ public class ImageRecognition {
 
     public Tensor ConvertByteToTensor(File file){
         try {
+
             this.byteFile = Files.readAllBytes(file.toPath());
         } catch (IOException e) {
             e.printStackTrace();
@@ -52,8 +53,12 @@ public class ImageRecognition {
             e.printStackTrace();
         }
         Tensor responseNeural = neuralNetwork.executeModelFromByteArray(graphDef,input);
+
         System.out.println(responseNeural.numElements());
         System.out.println(responseNeural.numDimensions());
+
+        float[][] copy = new float[1][responseNeural.numElements()];
+        responseNeural.copyTo(copy);
         return responseNeural;
     }
 
