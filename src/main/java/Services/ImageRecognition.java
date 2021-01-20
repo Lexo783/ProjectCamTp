@@ -57,7 +57,24 @@ public class ImageRecognition {
         return copy;
     }
 
+    public String[] getLabels(){
+        try {
+            String fileContents = new Scanner(new File(getClass().getClassLoader().getResource("inception5h/labels.txt").getFile())).useDelimiter("\\Z").next();
+            return fileContents.split("\n");
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+        return null;
+    }
 
+    public String getImagePotentialLabel(Map<Integer, Float> map){
+        Map.Entry<Integer,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
+        return getImagePotentialLabel(map, maxEntry.getKey());
+    }
+    public String getImagePotentialLabel(Map<Integer, Float> map, int index){
+        return this.getLabels()[index];
+    }
 
     /*
     public void copyTo()

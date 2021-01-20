@@ -35,6 +35,10 @@ public class Launcher extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Hello World!");
 
+        // create a textfield
+        TextField b = new TextField();
+        Label l = new Label("no text");
+
         // Create Button
         Button btn = new Button();
         btn.setText("Say 'Hello World'");
@@ -43,13 +47,14 @@ public class Launcher extends Application {
 
             File file = fileSelector.selectFile(primaryStage);
             float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
-            Map<Integer,Float> bestLabels = matrix.getIndexFromMaxMatrix(copy);
-            System.out.println(bestLabels);
+            Map<Integer,Float> allBestLabels = matrix.getIndexFromMaxMatrix(copy);
+            System.out.println(allBestLabels);
+            String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
+            System.out.println(bestLabel);
+            l.setText(bestLabel);
         });
 
-        // create a textfield
-        TextField b = new TextField();
-        Label l = new Label("no text");
+
 
         // action event
         EventHandler<ActionEvent> event = (ActionEvent e) -> {
