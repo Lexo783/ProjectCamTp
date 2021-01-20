@@ -52,10 +52,8 @@ public class ImageRecognition {
             e.printStackTrace();
         }
         Tensor responseNeural = neuralNetwork.executeModelFromByteArray(graphDef,input);
-        float[]
         System.out.println(responseNeural.numElements());
         System.out.println(responseNeural.numDimensions());
-        for ()
         return responseNeural;
     }
 
