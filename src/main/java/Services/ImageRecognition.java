@@ -94,12 +94,17 @@ public class ImageRecognition {
     }
 
 
-    public String getImagePotentialLabel(Map<Integer, Float> map){
+    public String getImagePotentialLabelByIndex(Map<Integer, Float> map){
         Map.Entry<Integer,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
-        return getImagePotentialLabel(map, maxEntry.getKey());
+        return getImagePotentialLabelByIndex(map, maxEntry.getKey());
     }
-    public String getImagePotentialLabel(Map<Integer, Float> map, int index){
+    public String getImagePotentialLabelByIndex(Map<Integer, Float> map, int index){
         return this.getLabels()[index];
+    }
+
+    public String getImagePotentialLabel(Map<String, Float> map){
+        Map.Entry<String,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
+        return maxEntry.getKey();
     }
 
     /*
