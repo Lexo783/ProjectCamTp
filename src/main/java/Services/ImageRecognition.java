@@ -5,10 +5,8 @@ import org.tensorflow.Tensor;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class ImageRecognition {
 
@@ -59,8 +57,71 @@ public class ImageRecognition {
 
         float[][] copy = new float[1][responseNeural.numElements()];
         responseNeural.copyTo(copy);
+
+        System.out.println("copy success");
+        List<Integer> maxIndexList = getIndexFromMaxMatrix(copy);
+        HashMap<Integer,Float> bestProba =new HashMap<Integer,Float>();//Creating HashMap
+        System.out.println("lists success");
+
+        for (Integer integer : maxIndexList) {
+            bestProba.put(integer, copy[0][integer]);
+        }
+        System.out.println(bestProba);
+
         return responseNeural;
     }
+
+    public void printMatrix(int[][] matrix) {
+        for (int row = 0; row < matrix.length; row++) {
+            for (int col = 0; col < matrix[row].length; col++) {
+                System.out.printf("%4d", matrix[row][col]);
+            }
+            System.out.println();
+        }
+    }
+    public void printMatrix(float[][] matrix) {
+        for (int row = 0; row < matrix.length; row++) {
+            for (int col = 0; col < matrix[row].length; col++) {
+                System.out.printf("%.2f", matrix[row][col]);
+            }
+            System.out.println();
+        }
+    }
+
+    /**
+     * Get element's index with max value in our matrix.
+     * Supposed to be use for a matrix with 1 row and N columns.
+     * Ex int[1][1000].
+     * @param matrix    => a matrix as int [row][col]
+     * @param elementNb => number of index with max value we want to get
+     * @return list of index
+     */
+    public List<Integer> getIndexFromMaxMatrix(float[][] matrix, int elementNb) {
+        List<Integer> listIndexMax = new ArrayList<Integer>();
+        HashMap<Integer,Float> bestProba =new HashMap<Integer,Float>();//Creating HashMap
+
+        for (float[] floats : matrix) {
+            for (int col = 0; col < floats.length; col++) {
+                Map.Entry<Integer,Float> minEntry = Collections.min(bestProba.entrySet(), Map.Entry.comparingByValue());
+                int minFromList= (listIndexMax.size()>0 ? Collections.min(listIndexMax): 0);
+                if (listIndexMax.size() <= elementNb || floats[col] > minFromList) {
+                    listIndexMax.add(col);
+                    System.out.println(floats[col]);
+                    bestProba.put(col, floats[col]);
+                    bestProba.remove(minEntry.getKey());
+
+                }
+                if (listIndexMax.size() > elementNb){
+                    listIndexMax.remove(minFromList);
+                }
+            }
+        }
+        return listIndexMax;
+    }
+    public List<Integer> getIndexFromMaxMatrix(float[][] matrix) {
+        return getIndexFromMaxMatrix(matrix, 5);
+    }
+
 
     /*
     public void copyTo()
