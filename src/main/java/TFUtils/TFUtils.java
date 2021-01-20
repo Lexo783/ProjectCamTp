@@ -1,20 +1,16 @@
 package TFUtils;
 
+import Services.NeuralNetwork;
 import org.tensorflow.*;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 
-public class TFUtils {
+public class TFUtils implements NeuralNetwork {
 
-    Tensor executeSavedModel(String modelFolderPath, Tensor input) {
+    public Tensor executeSavedModel(String modelFolderPath, Tensor input) {
         try {
             Path path = Paths.get(ClassLoader.getSystemClassLoader().getResource(modelFolderPath).toURI()).toAbsolutePath();
             //Parse model, and read all bytes or exit
@@ -27,7 +23,7 @@ public class TFUtils {
         }
     }
 
-    Tensor executeModelFromByteArray(byte[] graphDef, Tensor input) {
+    public Tensor executeModelFromByteArray(byte[] graphDef, Tensor input) {
         try (Graph g = new Graph()) {
             g.importGraphDef(graphDef);
             try (Session s = new Session(g)) {
@@ -45,7 +41,7 @@ public class TFUtils {
      * @param imageBytes
      * @return
      */
-    Tensor byteBufferToTensor(byte[] imageBytes) {
+    public Tensor byteBufferToTensor(byte[] imageBytes) {
         try (Graph g = new Graph()) {
             GraphBuilder graphBuilder = new GraphBuilder(g);
             // Some constants specific to the pre-trained model at:
