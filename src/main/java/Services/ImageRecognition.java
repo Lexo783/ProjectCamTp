@@ -20,6 +20,7 @@ public class ImageRecognition {
     private File fileTensorflow;
     private NeuralNetwork neuralNetwork;
     private byte[] byteFile = null;
+    private String[] labels;
 
     public ImageRecognition(){
         this.fileTensorflow = new File(getClass().getClassLoader().getResource("inception5h/tensorflow_inception_graph.pb").getFile());
@@ -37,6 +38,16 @@ public class ImageRecognition {
         return this.neuralNetwork.byteBufferToTensor(byteFile);
     }
 
+    public byte[] loadGraph(){
+        byte[] graphDef = new byte[0];
+        try {
+            graphDef = Files.readAllBytes(this.fileTensorflow.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return graphDef;
+    }
+
     /**
      * graphDef : Prendre le fichier tensorflow_inception_graph.pb
      * @param input Envoie le Tensor de l'image byte[] graphDef
@@ -44,29 +55,44 @@ public class ImageRecognition {
      * https://www.tensorflow.org/api_docs/java/org/tensorflow/Tensor#copyTo(U)
      */
     public float[][] executeModelFromByteArray(Tensor input){
-        byte[] graphDef = new byte[0];
-        try {
-            graphDef = Files.readAllBytes(this.fileTensorflow.toPath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byte[] graphDef = loadGraph();
         Tensor responseNeural = neuralNetwork.executeModelFromByteArray(graphDef,input);
-
         float[][] copy = new float[1][responseNeural.numElements()];
         responseNeural.copyTo(copy);
         return copy;
     }
 
-    public String[] getLabels(){
+    public String loadLabels(){
+        return loadLabels("inception5h/labels.txt");
+    }
+
+    public String loadLabels(String resourcePath){
         try {
-            String fileContents = new Scanner(new File(getClass().getClassLoader().getResource("inception5h/labels.txt").getFile())).useDelimiter("\\Z").next();
-            return fileContents.split("\n");
+            System.out.println("load labels ...");
+            return new Scanner(new File(getClass().getClassLoader().getResource(resourcePath).getFile())).useDelimiter("\\Z").next();
         }
         catch (Exception e){
             System.out.println(e);
         }
         return null;
     }
+
+    /**
+     * Get class attribute's labels, if there isn't one, we try to load labels
+     * from a file
+     * @return
+     */
+    public String[] getLabels(){
+        if (this.labels==null){
+            this.setLabels(loadLabels().split("\n"));
+        }
+        return this.labels;
+    }
+
+    public void setLabels(String[] labels) {
+        this.labels = labels;
+    }
+
 
     public String getImagePotentialLabel(Map<Integer, Float> map){
         Map.Entry<Integer,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
