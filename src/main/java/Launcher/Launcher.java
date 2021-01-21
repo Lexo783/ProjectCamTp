@@ -23,6 +23,7 @@ import javafx.embed.swing.SwingFXUtils;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import javafx.scene.image.*;
 import org.bytedeco.javacv.*;
@@ -33,6 +34,7 @@ import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 
+import javax.imageio.ImageIO;
 import java.io.File;
 import java.util.Map;
 import java.util.Timer;
@@ -61,7 +63,6 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
     private void launchCam(ImageView camView){
-
         try {
             grabber.start();
         }catch (Exception e){}
@@ -76,18 +77,14 @@ public class Launcher extends Application {
 //        timer.schedule( task, 0, 1000);
 
 
-        Runnable helloRunnable = new Runnable() {
+        Runnable getFrameRunnable = new Runnable() {
             public void run() {
                 getOneCamFrame(camView);
             }
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(helloRunnable, 0, 33, TimeUnit.MILLISECONDS);
-
-
-
-
+        executor.scheduleAtFixedRate(getFrameRunnable, 0, 33, TimeUnit.MILLISECONDS);
     }
 
     private void getOneCamFrame(ImageView camView){
@@ -134,59 +131,6 @@ public class Launcher extends Application {
         ImageView camView  = new  ImageView();
         grabber.setImageWidth(300);
         grabber.setImageHeight(300);
-
-
-/* //good one
-        try {
-            grabber.start();
-            while (true) {
-//                try {
-//                    BufferedImage img = converter.convert(grabber.grab());
-//                    WritableImage writable = frameToImage();
-//                    img = checkBayer(img);
-//                    if (img != null) {
-//                        this.updateCurrentImage(img);
-//                    }
-//                } catch (Exception e) {
-//                }
-                Frame frame = grabber.grab(); // Frame frame = grabber.grabFrame();
-
-                if (frame != null) {
-                    WritableImage img = frameToImage(frame);
-                    camView.setImage(img);
-                    //cvSaveImage((i++) + "-pic.jpg", img); // save image
-                    //camView.setImage(convertToFxImage(frame.getBufferedImage())); //show image on ImageView
-                }
-            }
-        } catch (Exception e) {}
-*/
-
-//        process();
-
-        Runnable exe = new Runnable() {
-            @Override
-            public void run() {
-                getOneCamFrame(camView);
-            }
-        };
-        Executors.newSingleThreadExecutor().execute(exe);
-/*
-        Executors.newSingleThreadExecutor().execute{
-            while (true) {
-                try {
-                    Frame frame = grabber.grabFrame();
-                    //camView.image = frameToImage(frame);
-                }
-                catch (Exception e){
-                    System.out.println(e);
-                }
-            }
-        }
-*/
-        //Scene scene = Scene(VBox(imageView), 800.0, 800.0);
-        //primaryStage.scene = scene;
-        //primaryStage.show();
-
         //endregion
 
 
@@ -239,6 +183,83 @@ public class Launcher extends Application {
             Timer timer = new Timer();
             timer.schedule( task, 0, 1000);*/
             launchCam(camView);
+
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    System.out.println("try to found cam image");
+                    byte [] data = null;
+                    try {
+                        Frame frameTest = grabber.grab();
+                        BufferedImage imgTest = converter.convert(frameTest);
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+                        ImageIO.write(imgTest, "jpg", bos );
+                        data= bos.toByteArray();
+                    }catch (Exception e){
+                    }
+
+                    float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+                    allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
+                    String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
+                    System.out.println(allBestLabels);
+                    System.out.println(bestLabel); // #Story 5 - display label in console
+                    imageLabel.setText(bestLabel); // #Story 5 - display found label for image
+
+                    //region check our definition with labels found
+                    if (allBestLabels.containsKey(txtFieldDef.getText())){
+                        System.out.println("IA agree");
+                    }
+                    else{
+                        System.out.println("IA disagree");
+
+                    }
+                    //endregion
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule( task, 0, 1000);
+
+            /*Runnable saveImg = new Runnable() {
+                public void run() {
+                    System.out.println("try to found cam image");
+                    BufferedImage bImage = SwingFXUtils.fromFXImage(camView.getImage(),null );
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    byte [] data = null;
+                    try {
+                        ImageIO.write(bImage, "jpg", bos );
+                        data= bos.toByteArray();
+                    }catch (Exception e){
+                        System.out.println("erreur byte arr----\n" + e);
+                    }
+
+                    System.out.println("avance");
+                    float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+                    System.out.println("begin copy");
+
+                    allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
+                    System.out.println(" labels");
+
+                    String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
+                    System.out.println(allBestLabels);
+                    System.out.println(bestLabel); // #Story 5 - display label in console
+                    imageLabel.setText(bestLabel); // #Story 5 - display found label for image
+                    System.out.println("fin copy + labels");
+
+                    //region check our definition with labels found
+                    if (allBestLabels.containsKey(txtFieldDef.getText())){
+                        System.out.println("IA agree");
+                    }
+                    else{
+                        System.out.println("IA disagree");
+
+                    }
+                    //endregion
+                }
+            };
+            ScheduledExecutorService imgExecutor = Executors.newScheduledThreadPool(2);
+            imgExecutor.scheduleAtFixedRate(saveImg, 0, 2, TimeUnit.SECONDS);
+*/
         });
         //endregion
 
