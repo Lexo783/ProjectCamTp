@@ -4,3 +4,6 @@
 build/
 gradlew
 gradlew.bat
+hs_err_*.log
+.DS_Store
+**/img*/**.jpg

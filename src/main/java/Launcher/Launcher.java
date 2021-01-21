@@ -31,6 +31,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class Launcher extends Application {
@@ -43,9 +44,28 @@ public class Launcher extends Application {
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     private DirectoryChooser directoryChooser;
     private BorderPane root;
+    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+    private BufferedImage currentImg;
+    private String currentDirStoragePath;
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    public File selectStorageDir() {
+        if(this.getCurrentDirStoragePath()!=null){
+            directoryChooser.setInitialDirectory(new File(this.currentDirStoragePath));
+        }
+        return directoryChooser.showDialog(new Stage());
+    }
+
+
+    public String getCurrentDirStoragePath() {
+        return currentDirStoragePath;
+    }
+    public void setCurrentDirStoragePath(String currentDirStoragePath) {
+        this.currentDirStoragePath = currentDirStoragePath;
     }
 
 
@@ -53,6 +73,7 @@ public class Launcher extends Application {
         BufferedImage bufferedImage = converter.getBufferedImage(frame);
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
+
     private void launchCam(ImageView camView){
         try {
             grabber.start();
@@ -67,17 +88,30 @@ public class Launcher extends Application {
 //        Timer timer = new Timer();
 //        timer.schedule( task, 0, 1000);
 
-        Runnable getFrameRunnable = new Runnable() {
-            public void run() {
-                getOneCamFrame(camView);
+        //work on it
+        Runnable task1 = () -> {
+            try {
+                currentImg = converter.convert(grabber.grab());
+            }
+            catch (Exception e){
             }
         };
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        // init Delay = 5, repeat the task every 1 second
+        ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(task1, 3, 1, TimeUnit.SECONDS);
+
+
+
+        Runnable getFrameRunnable = new Runnable() {
+            public void run() {
+                updateViewImage(camView);
+            }
+        };
+
         executor.scheduleAtFixedRate(getFrameRunnable, 0, 33, TimeUnit.MILLISECONDS);//30fps
     }
 
-    private void getOneCamFrame(ImageView camView){
+    private void updateViewImage(ImageView camView){
         try {
             Frame frame = grabber.grab(); // Frame frame = grabber.grabFrame();
             if (frame != null) {
@@ -89,18 +123,32 @@ public class Launcher extends Application {
     }
 
     private void saveImageFile(File fileToSave){
-        File selectedDirectory = directoryChooser.showDialog(new Stage());
-        if (selectedDirectory != null) {
-            try {
-                BufferedImage bufferedImage = ImageIO.read(fileToSave);
-                ImageIO.write(bufferedImage, "jpg", new File(selectedDirectory.getPath() +"/"+ fileToSave.getName()));
-            } catch (Exception ioException) {
-                ioException.printStackTrace();
+        try {
+            BufferedImage bufferedImage = ImageIO.read(fileToSave);
+            saveImageWithSelectDir(bufferedImage, fileToSave.getName());
+        } catch (Exception ioException) {
+            ioException.printStackTrace();
+        }
+    }
+
+    private void saveImageWithSelectDir(BufferedImage image, String name){
+        if (this.getCurrentDirStoragePath()==null){
+            File selectedDirectory = selectStorageDir();
+            if (selectedDirectory != null) {
+                this.setCurrentDirStoragePath(selectedDirectory.getPath());
+                saveImage(image, this.currentDirStoragePath + "/" + name);
             }
-            //imageLabel.setText("save realised");
-            //imageLabel.setText("File couldn't be saved.");
-        }else{
-            //imageLabel.setText("save cancel");
+        }
+        else{
+            saveImage(image, this.getCurrentDirStoragePath() + "/" + name);
+        }
+    }
+
+    private void saveImage(BufferedImage image, String path){
+        try {
+            ImageIO.write(image, "jpg", new File(path));
+        } catch (Exception ioException) {
+            ioException.printStackTrace();
         }
     }
 
@@ -168,13 +216,15 @@ public class Launcher extends Application {
 
             }
             //endregion
-            for (Map.Entry mapentry : allBestLabels.entrySet()) {
-                float probaTF = (Float) mapentry.getValue() * 100;
-                int choiceProba = Integer.parseInt(choiceBox.getValue().toString().replaceAll("%", ""));
-                if(probaTF > choiceProba){
-                    //save file
-                    System.out.println( mapentry.getKey() + " as good proba: " + probaTF + "%");
-                    saveImageFile(file);
+            if(choiceBox.getValue()!=null) {
+                for (Map.Entry mapentry : allBestLabels.entrySet()) {
+                    float probaTF = (Float) mapentry.getValue() * 100;
+                    int choiceProba = Integer.parseInt(choiceBox.getValue().toString().replaceAll("%", ""));
+                    if (probaTF > choiceProba) {
+                        //save file
+                        System.out.println(mapentry.getKey() + " as good proba: " + probaTF + "%");
+                        saveImageFile(file);
+                    }
                 }
             }
 
@@ -182,6 +232,13 @@ public class Launcher extends Application {
         //endregion
 
 
+        //region select new dir
+        Button selectDirBtn = new Button();// select button
+        selectDirBtn.setText("Select Dir");
+        selectDirBtn.setOnAction((action) -> {
+            this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
+        });
+        //endregion
 
         //region select sources buttons
         //region button select source from cam
@@ -243,7 +300,7 @@ public class Launcher extends Application {
         //endregion
 
         choiceBox.getItems().addAll("50%", "60%", "70%","80%","90%","100%");
-
+        choiceBox.setValue("50%");
         choiceBox.setOnAction(event1 -> {
             System.out.println(choiceBox.getValue());
         });
@@ -298,6 +355,7 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(btnSourceCam);
         sourceSelectPan.getChildren().add(btnSourcePics);
         sourceSelectPan.getChildren().add(choiceBox);
+        sourceSelectPan.getChildren().add(selectDirBtn);
         //endregion
 
 
