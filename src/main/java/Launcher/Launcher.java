@@ -22,17 +22,22 @@ import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import javafx.scene.image.*;
 import org.bytedeco.javacv.*;
 import org.bytedeco.opencv.global.opencv_imgproc.*;
 import org.bytedeco.opencv.opencv_core.IplImage;
-import org.bytedeco.opencv.opencv_core.Mat;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
 
 import java.io.File;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -56,19 +61,20 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
     private void launchCam(ImageView camView){
+
         try {
             grabber.start();
         }catch (Exception e){}
-        /*TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
+//        TimerTask task = new TimerTask() {
+//            @Override
+//            public void run() {
+//
+//                getOneCamFrame(camView);
+//            }
+//        };
+//        Timer timer = new Timer();
+//        timer.schedule( task, 0, 1000);
 
-                getOneCamFrame(camView);
-            }
-        };
-        Timer timer = new Timer();
-        timer.schedule( task, 0, 1000);
-*/
 
         Runnable helloRunnable = new Runnable() {
             public void run() {
@@ -77,7 +83,11 @@ public class Launcher extends Application {
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(helloRunnable, 0, 3, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(helloRunnable, 0, 33, TimeUnit.MILLISECONDS);
+
+
+
+
     }
 
     private void getOneCamFrame(ImageView camView){
@@ -121,35 +131,11 @@ public class Launcher extends Application {
 
 
         //region cam
-        /*
-        ImageView videoView = new ImageView();
-        OpenCVFrameGrabber grabber  = new OpenCVFrameGrabber(0);
-        try {  grabber.start(); }        catch (Exception e){            System.out.println(e);
-       }
-        // Fire off a thread to grab frames while the camera is active
-        // Each frame will ber passed to the updateView method below
-        // ... timer/thread omitted for brevity
-
-        Mat javaCVMat = new Mat();
-
-        // create buffer only once saves much time!
-        ByteBuffer buffer = javaCVMat.createBuffer();
-
-        WritablePixelFormat<ByteBuffer> formatByte = PixelFormat.getByteBgraPreInstance();
-
-    */
         ImageView camView  = new  ImageView();
         grabber.setImageWidth(300);
         grabber.setImageHeight(300);
 
-/*
-        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-        IplImage frame = converter.convert(grabber.grab());
-        IplImage image = null;
-        IplImage prevImage = null;
-        IplImage diff = null;
-        JavaFXFrameConverter frameConverter = new JavaFXFrameConverter();
-*/
+
 /* //good one
         try {
             grabber.start();
@@ -177,6 +163,13 @@ public class Launcher extends Application {
 
 //        process();
 
+        Runnable exe = new Runnable() {
+            @Override
+            public void run() {
+                getOneCamFrame(camView);
+            }
+        };
+        Executors.newSingleThreadExecutor().execute(exe);
 /*
         Executors.newSingleThreadExecutor().execute{
             while (true) {
@@ -235,6 +228,7 @@ public class Launcher extends Application {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("video", "*.mp4", "*.cam");
 
+            /*
             TimerTask task = new TimerTask() {
 
                 @Override
@@ -243,8 +237,8 @@ public class Launcher extends Application {
                 }
             };
             Timer timer = new Timer();
-            timer.schedule( task, 0, 1000);
-            //launchCam(camView);
+            timer.schedule( task, 0, 1000);*/
+            launchCam(camView);
         });
         //endregion
 
@@ -259,7 +253,6 @@ public class Launcher extends Application {
             }catch (Exception e){
                 System.out.println(e);
             }
-            launchCam(camView);
         });
         //endregion
         //endregion
