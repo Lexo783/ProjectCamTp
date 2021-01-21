@@ -9,11 +9,9 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
+import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -23,11 +21,11 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import java.io.*;
+
 import javafx.scene.image.*;
 import org.bytedeco.javacv.*;
 import javax.imageio.ImageIO;
-import java.io.File;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -144,6 +142,9 @@ public class Launcher extends Application {
 
         ChoiceBox choiceBoxFilter2 = new ChoiceBox();
         choiceBoxFilter2.setValue("No Filter");
+
+        ChoiceBox choiceBoxFilter3 = new ChoiceBox();
+        choiceBoxFilter3.setValue("No Cadre");
 
         Button btn = new Button();// select button
         this.directoryChooser = new DirectoryChooser();
@@ -298,26 +299,49 @@ public class Launcher extends Application {
         // when enter is pressed
         txtFieldDef.setOnAction(event);
 
-        //imageView.setImage(); //Here the image to set
+
         Platform.runLater(()->{
             imageView.setImage(new Image(this.getClass().getResource("/img/jack.jpg").toString()));
         });
 
-
+        choiceBoxFilter3.getItems().addAll("No Filter", "Classik");
         choiceBoxFilter2.getItems().addAll("No Filter", "Red", "Blue", "Green");
         ImageView imageView2 = new ImageView();
-        
+        final Group[] blend = {new Group()};
+
         btnSourcePicsNoIA.setOnAction(event1 -> {
+            //Get path to Image
             File file = this.fileSelector.selectFile(primaryStage);
-            System.out.println(file);
             String[] pathArr = file.getAbsolutePath().split("/resources");
-            imageView2.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
+            Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
+
+            imageView2.setImage(resBottom);
             Color filterColor = this.filter.setColor(choiceBoxFilter2.getValue().toString());
             if (filterColor != null)
                 imageView2.setEffect(this.filter.filterColor(filterColor));
         });
-
-
+        Label labelCadre = new Label();
+        choiceBoxFilter3.setOnAction(event1 -> {
+            try {
+                if (this.filter.getCadre(choiceBoxFilter3.getValue().toString()) != null)
+                {
+                    InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
+                    Image image = new Image(stream);
+                    ImageView imageView3 = new ImageView(image);
+                    imageView3.setFitWidth(100);
+                    imageView3.setFitHeight(100);
+                    labelCadre.setTranslateY(-100);
+                    labelCadre.setGraphic(imageView3);
+                    labelCadre.setVisible(true);
+                }
+                else
+                {
+                    labelCadre.setVisible(false);
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        });
 
         //region manage display -- background could change, just used to debug for now
         //region initialize window
@@ -345,6 +369,8 @@ public class Launcher extends Application {
 
         sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
         sourceSelectPan.getChildren().add(choiceBoxFilter2);
+        sourceSelectPan.getChildren().add(choiceBoxFilter3);
+
 
         //endregion
 
@@ -362,7 +388,7 @@ public class Launcher extends Application {
         picsSelectionPan.getChildren().addAll( imageView, imageLabel);
 
         picsSelectionPan.getChildren().addAll(imageView2);
-
+        picsSelectionPan.getChildren().addAll(labelCadre);
         //endregion
 
 
