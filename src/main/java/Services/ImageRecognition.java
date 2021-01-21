@@ -29,12 +29,16 @@ public class ImageRecognition {
 
     public Tensor ConvertByteToTensor(File file){
         try {
-
             this.byteFile = Files.readAllBytes(file.toPath());
         } catch (IOException e) {
             e.printStackTrace();
         }
         setFile(file);
+        return this.neuralNetwork.byteBufferToTensor(byteFile);
+    }
+
+    public Tensor setByteFile(byte[] data){
+        this.byteFile = data;
         return this.neuralNetwork.byteBufferToTensor(byteFile);
     }
 
