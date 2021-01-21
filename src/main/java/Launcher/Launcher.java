@@ -46,6 +46,7 @@ public class Launcher extends Application {
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
     private String currentDirStoragePath;
     //endregion
@@ -84,16 +85,6 @@ public class Launcher extends Application {
         this.currentDirStoragePath = currentDirStoragePath;
     }
     //endregion
-
-    /**
-     * Convert a Frame into Writable image.
-     * @param frame => a frame, probably get thanks to a camera or video.
-     * @return an image usable into java FX ImageView
-     */
-    private WritableImage frameToImage(Frame frame) {
-        BufferedImage bufferedImage = converter.getBufferedImage(frame);
-        return SwingFXUtils.toFXImage(bufferedImage, null);
-    }
 
     //region camera functions
     /**
@@ -152,7 +143,7 @@ public class Launcher extends Application {
     private void closeCam(ImageView camView, Label camLabel){
         closeCam();
         camView.setImage(null);
-        camLabel.setText(null);
+        camLabel.setText("");
     }
     //endregion
 
@@ -229,9 +220,7 @@ public class Launcher extends Application {
         System.out.println(allBestLabels);
         String bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
         System.out.println(bestLabel);
-        Platform.runLater(()->{ // be in FX application thread
-            label.setText(bestLabel);
-        });
+        setLabelText(label, bestLabel);
     }
 
     /**
@@ -298,27 +287,39 @@ public class Launcher extends Application {
         }catch (Exception e){
         }
 
-        float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
-        updateGetLabels(copy, camLabel);
-
-        runCheckSaveFunction(()->saveImageWithSelectDir( this.currentImg, txtFieldDef.getText() + ".jpg"));
+        try {
+            float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+            updateGetLabels(copy, camLabel);
+            runCheckSaveFunction(() -> saveImageWithSelectDir(this.currentImg, txtFieldDef.getText() + ".jpg"));
+        }catch (Exception e){
+            setLabelText(camLabel, "");
+        }
     }
     //endregion
 
-
-    /*
-    public Unit updateView(Frame frame){
-        int w = frame.imageWidth();
-        int h = frame.imageHeight();
-
-        val mat = javaCVConv.convert(frame);
-        cvtColor(mat, javaCVMat, COLOR_BGR2BGRA);
-
-        val pb = PixelBuffer(w, h, buffer, formatByte);
-        val wi = WritableImage(pb);
-        videoView.setImage(wi);
-    }
+    /**
+     * Convert a Frame into Writable image.
+     * @param frame => a frame, probably get thanks to a camera or video.
+     * @return an image usable into java FX ImageView
      */
+    private WritableImage frameToImage(Frame frame) {
+        BufferedImage bufferedImage = converter.getBufferedImage(frame);
+        return SwingFXUtils.toFXImage(bufferedImage, null);
+    }
+
+    /**
+     * Set label text value in FX thread.
+     * @param label => a label to update
+     * @param text  => text to insert in label
+     */
+    private void setLabelText(Label label, String text){
+        Platform.runLater(()->{ // be in FX application thread
+            label.setText(text);
+        });
+    }
+
+
+
     @Override
     public void start(Stage primaryStage) {
         //region initialise all elements
@@ -378,19 +379,22 @@ public class Launcher extends Application {
         btnSourceCam.setText("Select camera as source");
         btnSourceCam.setOnAction((action) -> {
             //add all extension for cam (or video)
-            fileSelector.setExtFilter("video", "*.mp4");
+            //fileSelector.setExtFilter("video", "*.mp4");
 
             launchCam(camView);
 
             //region repeat image recognition function
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    recognise(camLabel);
-                }
-            };
-            Timer timer = new Timer();
-            timer.schedule( task, 0, 1000);
+            if (!this.isExecutorLaunched) {
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        recognise(camLabel);
+                    }
+                };
+                Timer timer = new Timer();
+                timer.schedule(task, 0, 1000);
+                this.isExecutorLaunched = true;
+            }
             //endregion
         });
         //endregion
@@ -401,6 +405,8 @@ public class Launcher extends Application {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
             closeCam(camView, camLabel);
+            this.isExecutorLaunched = false;
+
         });
         //endregion
         //endregion

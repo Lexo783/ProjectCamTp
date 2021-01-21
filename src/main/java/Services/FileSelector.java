@@ -12,21 +12,7 @@ public class FileSelector {
     private final DirectoryChooser directoryChooser = new DirectoryChooser();
     private final FileChooser fileChooser = new FileChooser();
     private FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.jpeg");;
-    private final String[] camExt = {"*.mp4"} ;
-    private final String[] imageExt = {"*.jpg", "*.jpeg", "*.png"} ;
-    private final String[] jpgExt = {"*.jpg", "*.jpeg"} ;
 
-    public String[] getCamExt() {
-        return camExt;
-    }
-
-    public String[] getImageExt() {
-        return imageExt;
-    }
-
-    public String[] getJpgExt() {
-        return jpgExt;
-    }
 
     public FileChooser.ExtensionFilter getExtFilter() {
         return extFilter;
@@ -46,7 +32,7 @@ public class FileSelector {
 
     public File selectFile(Stage primaryStage){
         fileChooser.setTitle("Select");
-        fileChooser.setSelectedExtensionFilter(this.getExtFilter());
+        fileChooser.getExtensionFilters().add(this.getExtFilter());
         return fileChooser.showOpenDialog(primaryStage);
     }
 
