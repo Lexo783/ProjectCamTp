@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,9 +19,23 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
+import javafx.embed.swing.SwingFXUtils;
+
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
+import javafx.scene.image.*;
+import org.bytedeco.javacv.*;
+import org.bytedeco.opencv.global.opencv_imgproc.*;
+import org.bytedeco.opencv.opencv_core.IplImage;
+import org.bytedeco.opencv.opencv_core.Mat;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Launcher extends Application {
 
@@ -28,11 +43,68 @@ public class Launcher extends Application {
     private ImageRecognition imageRecognition = new ImageRecognition();
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
+    private Java2DFrameConverter converter = new Java2DFrameConverter();
+    private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
 
     public static void main(String[] args) {
         launch(args);
     }
 
+
+    private WritableImage frameToImage(Frame frame) {
+        BufferedImage bufferedImage = converter.getBufferedImage(frame);
+        return SwingFXUtils.toFXImage(bufferedImage, null);
+    }
+    private void launchCam(ImageView camView){
+        try {
+            grabber.start();
+        }catch (Exception e){}
+        /*TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+
+                getOneCamFrame(camView);
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule( task, 0, 1000);
+*/
+
+        Runnable helloRunnable = new Runnable() {
+            public void run() {
+                getOneCamFrame(camView);
+            }
+        };
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(helloRunnable, 0, 3, TimeUnit.SECONDS);
+    }
+
+    private void getOneCamFrame(ImageView camView){
+        try {
+            Frame frame = grabber.grab(); // Frame frame = grabber.grabFrame();
+            if (frame != null) {
+                WritableImage img = frameToImage(frame);
+                camView.setImage(img);
+            }
+        } catch (Exception e) {}
+
+    }
+
+    /*
+    public Unit updateView(Frame frame){
+        int w = frame.imageWidth();
+        int h = frame.imageHeight();
+
+        val mat = javaCVConv.convert(frame);
+        cvtColor(mat, javaCVMat, COLOR_BGR2BGRA);
+
+        val pb = PixelBuffer(w, h, buffer, formatByte);
+        val wi = WritableImage(pb);
+        videoView.setImage(wi);
+    }
+
+     */
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Hello World!");
@@ -46,6 +118,84 @@ public class Launcher extends Application {
         final ImageView imageView = new ImageView(); //place for image
         Label imageLabel = new Label("no text");
         //endregion
+
+
+        //region cam
+        /*
+        ImageView videoView = new ImageView();
+        OpenCVFrameGrabber grabber  = new OpenCVFrameGrabber(0);
+        try {  grabber.start(); }        catch (Exception e){            System.out.println(e);
+       }
+        // Fire off a thread to grab frames while the camera is active
+        // Each frame will ber passed to the updateView method below
+        // ... timer/thread omitted for brevity
+
+        Mat javaCVMat = new Mat();
+
+        // create buffer only once saves much time!
+        ByteBuffer buffer = javaCVMat.createBuffer();
+
+        WritablePixelFormat<ByteBuffer> formatByte = PixelFormat.getByteBgraPreInstance();
+
+    */
+        ImageView camView  = new  ImageView();
+        grabber.setImageWidth(300);
+        grabber.setImageHeight(300);
+
+/*
+        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+        IplImage frame = converter.convert(grabber.grab());
+        IplImage image = null;
+        IplImage prevImage = null;
+        IplImage diff = null;
+        JavaFXFrameConverter frameConverter = new JavaFXFrameConverter();
+*/
+/* //good one
+        try {
+            grabber.start();
+            while (true) {
+//                try {
+//                    BufferedImage img = converter.convert(grabber.grab());
+//                    WritableImage writable = frameToImage();
+//                    img = checkBayer(img);
+//                    if (img != null) {
+//                        this.updateCurrentImage(img);
+//                    }
+//                } catch (Exception e) {
+//                }
+                Frame frame = grabber.grab(); // Frame frame = grabber.grabFrame();
+
+                if (frame != null) {
+                    WritableImage img = frameToImage(frame);
+                    camView.setImage(img);
+                    //cvSaveImage((i++) + "-pic.jpg", img); // save image
+                    //camView.setImage(convertToFxImage(frame.getBufferedImage())); //show image on ImageView
+                }
+            }
+        } catch (Exception e) {}
+*/
+
+//        process();
+
+/*
+        Executors.newSingleThreadExecutor().execute{
+            while (true) {
+                try {
+                    Frame frame = grabber.grabFrame();
+                    //camView.image = frameToImage(frame);
+                }
+                catch (Exception e){
+                    System.out.println(e);
+                }
+            }
+        }
+*/
+        //Scene scene = Scene(VBox(imageView), 800.0, 800.0);
+        //primaryStage.scene = scene;
+        //primaryStage.show();
+
+        //endregion
+
 
         // region Create Button select file
         Button btn = new Button();
@@ -84,6 +234,17 @@ public class Launcher extends Application {
         btnSourceCam.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("video", "*.mp4", "*.cam");
+
+            TimerTask task = new TimerTask() {
+
+                @Override
+                public void run() {
+                    launchCam(camView);
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule( task, 0, 1000);
+            //launchCam(camView);
         });
         //endregion
 
@@ -93,6 +254,12 @@ public class Launcher extends Application {
         btnSourcePics.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
+            try{
+                grabber.stop();
+            }catch (Exception e){
+                System.out.println(e);
+            }
+            launchCam(camView);
         });
         //endregion
         //endregion
@@ -116,8 +283,8 @@ public class Launcher extends Application {
         //region manage display -- background could change, just used to debug for now
         //region initialize window
         BorderPane root = new BorderPane();
-        final int rootWidth = 600;
-        final int rootheight = 600;
+        final int rootWidth = 1200;
+        final int rootheight = 700;
         root.setStyle("-fx-background-color: #CCCCCC;");
 
         primaryStage.setScene(new Scene(root, rootWidth, rootheight));
@@ -152,6 +319,7 @@ public class Launcher extends Application {
         root.setTop(sourceSelectPan);
         root.setLeft(leftPan);
 
+        root.setRight(camView);
         primaryStage.show();
         //endregion
     }
