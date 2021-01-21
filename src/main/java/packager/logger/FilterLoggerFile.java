@@ -1,4 +1,4 @@
-package com.packager.logger;
+package packager.logger;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;

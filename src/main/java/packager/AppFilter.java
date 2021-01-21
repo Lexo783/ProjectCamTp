@@ -1,9 +1,9 @@
-package com.packager;
+package packager;
 
-import com.packager.exception.FilterException;
-import com.packager.filters.*;
-import com.packager.logger.FilterLogger;
-import com.packager.logger.FilterLoggerFile;
+import packager.exception.FilterException;
+import packager.filters.*;
+import packager.logger.FilterLogger;
+import packager.logger.FilterLoggerFile;
 import org.apache.commons.cli.*;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.reflections.Reflections;
