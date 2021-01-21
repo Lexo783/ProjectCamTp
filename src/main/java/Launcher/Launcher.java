@@ -8,38 +8,26 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
-
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import javafx.scene.image.*;
 import org.bytedeco.javacv.*;
-import org.bytedeco.opencv.global.opencv_imgproc.*;
-import org.bytedeco.opencv.opencv_core.IplImage;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.videoio.VideoCapture;
-
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -263,6 +251,39 @@ public class Launcher extends Application {
         });
         //endregion
 
+        ChoiceBox choiceBox = new ChoiceBox();
+        choiceBox.getItems().addAll("50%", "60%", "70%","80%","90%","100%");
+
+        choiceBox.setOnAction(event1 -> {
+            System.out.println(choiceBox.getValue());
+        });
+
+        /*
+        Button button1 = new Button("Save File");
+        button1.setTranslateY(30);
+        button1.setOnAction(e -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Save file");
+            File selectedDirectory = directoryChooser.showDialog(new Stage());
+            if (selectedDirectory != null) {
+                BufferedImage bufferedImage = null;
+                try {
+                    bufferedImage = ImageIO.read(fileToSave);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                try {
+                    ImageIO.write(bufferedImage, "jpg", new File(selectedDirectory.getPath() +"/"+ fileToSave.getName() + ".jpg"));
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                imageLabel.setText("save realised");
+                    imageLabel.setText("File couldn't be saved.");
+            }else{
+                imageLabel.setText("save cancel");
+            }
+        });*/
+
         //region button select source from pictures
         Button btnSourcePics = new Button();
         btnSourcePics.setText("Select picture as source");
@@ -312,6 +333,7 @@ public class Launcher extends Application {
 
         sourceSelectPan.getChildren().add(btnSourceCam);
         sourceSelectPan.getChildren().add(btnSourcePics);
+        sourceSelectPan.getChildren().add(choiceBox);
         //endregion
 
 
