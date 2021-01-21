@@ -1,6 +1,7 @@
 package Launcher;
 
 import Services.FileSelector;
+import Services.Filter;
 import Services.ImageRecognition;
 import Services.Matrix;
 import javafx.application.Application;
@@ -17,6 +18,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
@@ -43,6 +45,8 @@ public class Launcher extends Application {
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     private DirectoryChooser directoryChooser;
     private BorderPane root;
+    Filter filter = new Filter();
+    private final FileSelector fileSelectorFilter = new FileSelector();
 
     public static void main(String[] args) {
         launch(args);
@@ -133,8 +137,19 @@ public class Launcher extends Application {
         //endregion
 
         ChoiceBox choiceBox = new ChoiceBox();
+        choiceBox.setValue("Percent confidence");
+
+        ChoiceBox choiceBoxFilter = new ChoiceBox();
+        choiceBoxFilter.setValue("No Filter");
+
+        ChoiceBox choiceBoxFilter2 = new ChoiceBox();
+        choiceBoxFilter2.setValue("No Filter");
+
         Button btn = new Button();// select button
         this.directoryChooser = new DirectoryChooser();
+
+        Button btnSourcePicsNoIA = new Button();// select button
+        btnSourcePicsNoIA.setText("Image Filter");
 
 
         //region cam
@@ -158,6 +173,10 @@ public class Launcher extends Application {
             //just try if img set works, it's fine. but seems image have to be in resources dir.
             String[] pathArr = file.getAbsolutePath().split("/resources");
             imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
+
+            Color filterColor = this.filter.setColor(choiceBoxFilter.getValue().toString());
+            if (filterColor != null)
+            imageView.setEffect(this.filter.filterColor(filterColor));
 
             //region check our definition with labels found
             if (allBestLabels.containsKey(txtFieldDef.getText())){
@@ -248,6 +267,12 @@ public class Launcher extends Application {
             System.out.println(choiceBox.getValue());
         });
 
+        choiceBoxFilter.getItems().addAll("No Filter", "Red", "Blue", "Green");
+
+        choiceBoxFilter.setOnAction(event1 -> {
+            System.out.println(choiceBox.getValue());
+        });
+
 
         //region button select source from pictures
         Button btnSourcePics = new Button();
@@ -279,6 +304,20 @@ public class Launcher extends Application {
         });
 
 
+        choiceBoxFilter2.getItems().addAll("No Filter", "Red", "Blue", "Green");
+        ImageView imageView2 = new ImageView();
+        
+        btnSourcePicsNoIA.setOnAction(event1 -> {
+            File file = this.fileSelector.selectFile(primaryStage);
+            System.out.println(file);
+            String[] pathArr = file.getAbsolutePath().split("/resources");
+            imageView2.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
+            Color filterColor = this.filter.setColor(choiceBoxFilter2.getValue().toString());
+            if (filterColor != null)
+                imageView2.setEffect(this.filter.filterColor(filterColor));
+        });
+
+
 
         //region manage display -- background could change, just used to debug for now
         //region initialize window
@@ -289,6 +328,10 @@ public class Launcher extends Application {
         primaryStage.setScene(new Scene(root, rootWidth, rootheight));
         imageView.setFitHeight(100);
         imageView.setFitWidth(100);
+
+        imageView2.setFitHeight(100);
+        imageView2.setFitWidth(100);
+
         //endregion
 
         //region top - select source panel
@@ -298,6 +341,11 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(btnSourceCam);
         sourceSelectPan.getChildren().add(btnSourcePics);
         sourceSelectPan.getChildren().add(choiceBox);
+        sourceSelectPan.getChildren().add(choiceBoxFilter);
+
+        sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
+        sourceSelectPan.getChildren().add(choiceBoxFilter2);
+
         //endregion
 
 
@@ -312,6 +360,9 @@ public class Launcher extends Application {
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
         picsSelectionPan.getChildren().addAll( imageView, imageLabel);
+
+        picsSelectionPan.getChildren().addAll(imageView2);
+
         //endregion
 
 
