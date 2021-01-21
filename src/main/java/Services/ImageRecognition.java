@@ -6,6 +6,7 @@ import org.tensorflow.Tensor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.*;
 
 public class ImageRecognition {
 
@@ -19,6 +20,7 @@ public class ImageRecognition {
     private File fileTensorflow;
     private NeuralNetwork neuralNetwork;
     private byte[] byteFile = null;
+    private String[] labels;
 
     public ImageRecognition(){
         this.fileTensorflow = new File(getClass().getClassLoader().getResource("inception5h/tensorflow_inception_graph.pb").getFile());
@@ -36,27 +38,73 @@ public class ImageRecognition {
         return this.neuralNetwork.byteBufferToTensor(byteFile);
     }
 
-    /**
-     * graphDef : Prendre le fichier tensorflow_inception_graph.pb
-     * @param input Envoie le Tensor de l'image byte[] graphDef
-     * @return tensor qui contient une liste de valeur qu'il faut convertir array float
-     * https://www.tensorflow.org/api_docs/java/org/tensorflow/Tensor#copyTo(U)
-     */
-    public Tensor executeModelFromByteArray(Tensor input){
+    public byte[] loadGraph(){
         byte[] graphDef = new byte[0];
         try {
             graphDef = Files.readAllBytes(this.fileTensorflow.toPath());
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return graphDef;
+    }
+
+    /**
+     * graphDef : Prendre le fichier tensorflow_inception_graph.pb
+     * @param input Envoie le Tensor de l'image byte[] graphDef
+     * @return tensor qui contient une liste de valeur qu'il faut convertir array float
+     * https://www.tensorflow.org/api_docs/java/org/tensorflow/Tensor#copyTo(U)
+     */
+    public float[][] executeModelFromByteArray(Tensor input){
+        byte[] graphDef = loadGraph();
         Tensor responseNeural = neuralNetwork.executeModelFromByteArray(graphDef,input);
-
-        System.out.println(responseNeural.numElements());
-        System.out.println(responseNeural.numDimensions());
-
         float[][] copy = new float[1][responseNeural.numElements()];
         responseNeural.copyTo(copy);
-        return responseNeural;
+        return copy;
+    }
+
+    public String loadLabels(){
+        return loadLabels("inception5h/labels.txt");
+    }
+
+    public String loadLabels(String resourcePath){
+        try {
+            System.out.println("load labels ...");
+            return new Scanner(new File(getClass().getClassLoader().getResource(resourcePath).getFile())).useDelimiter("\\Z").next();
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    /**
+     * Get class attribute's labels, if there isn't one, we try to load labels
+     * from a file
+     * @return
+     */
+    public String[] getLabels(){
+        if (this.labels==null){
+            this.setLabels(loadLabels().split("\n"));
+        }
+        return this.labels;
+    }
+
+    public void setLabels(String[] labels) {
+        this.labels = labels;
+    }
+
+
+    public String getImagePotentialLabelByIndex(Map<Integer, Float> map){
+        Map.Entry<Integer,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
+        return getImagePotentialLabelByIndex(map, maxEntry.getKey());
+    }
+    public String getImagePotentialLabelByIndex(Map<Integer, Float> map, int index){
+        return this.getLabels()[index];
+    }
+
+    public String getImagePotentialLabel(Map<String, Float> map){
+        Map.Entry<String,Float> maxEntry = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
+        return maxEntry.getKey();
     }
 
     /*
