@@ -53,15 +53,15 @@ public class Launcher extends Application {
         btn.setOnAction((action) -> {
             File file = fileSelector.selectFile(primaryStage);
             float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
-            String[] allLabels = imageRecognition.getLabels();
-            this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, allLabels);
+            this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
             String bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
             System.out.println(this.allBestLabels);
             System.out.println(bestLabel); // #Story 1 - display label in console
-            imageLabel.setText(bestLabel);
+            imageLabel.setText(bestLabel); // #Story 2 - display found label for image
 
             //just try if img set works, it's fine. but seems image have to be in resources dir.
-            imageView.setImage(new Image(this.getClass().getResource("/inception5h/tensorPics/suncokret.jpg").toString()));
+            String[] pathArr = file.getAbsolutePath().split("/resources");
+            imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
 
             //region check our definition with labels found
             if (allBestLabels.containsKey(txtFieldDef.getText())){
@@ -141,10 +141,10 @@ public class Launcher extends Application {
         //endregion
 
         //region center - image panel
-        FlowPane picsSelectionPan = new FlowPane(Orientation.HORIZONTAL);
+        FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
-        picsSelectionPan.getChildren().addAll( imageLabel, imageView);
+        picsSelectionPan.getChildren().addAll( imageView, imageLabel);
         //endregion
 
 
