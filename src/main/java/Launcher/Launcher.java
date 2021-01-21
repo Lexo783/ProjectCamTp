@@ -33,27 +33,28 @@ import java.util.concurrent.TimeUnit;
 
 public class Launcher extends Application {
 
+    //region class attributes
     private final FileSelector fileSelector = new FileSelector();
-    private ImageRecognition imageRecognition = new ImageRecognition();
-    private Matrix matrix = new Matrix();
-    private Map<String,Float> allBestLabels;
+    private DirectoryChooser directoryChooser;
     private Java2DFrameConverter converter = new Java2DFrameConverter();
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
-    private DirectoryChooser directoryChooser;
     private BorderPane root;
-
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-    private BufferedImage currentImg;
-    private String currentDirStoragePath;
-
     private ChoiceBox choiceBox;
     private TextField txtFieldDef;
 
+    private ImageRecognition imageRecognition = new ImageRecognition();
+    private Matrix matrix = new Matrix();
+    private Map<String,Float> allBestLabels;
+    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    private BufferedImage currentImg;
+    private String currentDirStoragePath;
+    //endregion
 
     public static void main(String[] args) {
         launch(args);
     }
 
+    //region storage dir attribute functions
     /**
      * Use to select storage Directory.
      * We set initial directory from the last selected one, if there is one.
@@ -82,7 +83,7 @@ public class Launcher extends Application {
     public void setCurrentDirStoragePath(String currentDirStoragePath) {
         this.currentDirStoragePath = currentDirStoragePath;
     }
-
+    //endregion
 
     /**
      * Convert a Frame into Writable image.
@@ -94,24 +95,13 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
 
+    //region camera functions
     /**
      * Launch the camera, and show video from cam into an ImageView.
      * @param camView ImageView to output the video
      */
     private void launchCam(ImageView camView){
-        try {
-            grabber.start();
-        }catch (Exception e){}
-//        TimerTask task = new TimerTask() {
-//            @Override
-//            public void run() {
-//
-//                getOneCamFrame(camView);
-//            }
-//        };
-//        Timer timer = new Timer();
-//        timer.schedule( task, 0, 1000);
-
+        startCamera();
         Runnable getFrameRunnable = new Runnable() {
             public void run() {
                 updateViewImage(camView);
@@ -134,6 +124,39 @@ public class Launcher extends Application {
         } catch (Exception e) {}
     }
 
+    /**
+     * Start the camera capture (by launching grabber).
+     */
+    private void startCamera(){
+        try {
+            grabber.start();
+        }catch (Exception e){}
+    }
+
+    /**
+     * Close camera by stopping grabber.
+     */
+    private void closeCam(){
+        try{
+            grabber.stop();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Close camera by stopping grabber, erase cam ImageView and label
+     * @param camView   => ImageView displaying camera capture video
+     * @param camLabel  => Label corresponding to the camera capture
+     */
+    private void closeCam(ImageView camView, Label camLabel){
+        closeCam();
+        camView.setImage(null);
+        camLabel.setText(null);
+    }
+    //endregion
+
+    //region save image functions
     /**
      * Save an image File with it's current name into a predefined directory.
      * @param fileToSave the image file we have to save.
@@ -193,7 +216,9 @@ public class Launcher extends Application {
             ioException.printStackTrace();
         }
     }
+    //endregion
 
+    //region recognise image and run save
     /**
      * Update a label depending on the label with better probability.
      * @param copy  a float matrix copy of Tensor flow response
@@ -248,6 +273,10 @@ public class Launcher extends Application {
         //just try if img set works, it's fine. but seems image have to be in resources dir.
         String[] pathArr = file.getAbsolutePath().split("/resources");
         imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
+        try {
+            this.currentImg = ImageIO.read(file);
+        } catch (Exception e) {
+        }
 
         runCheckSaveFunction(()->saveImageFile(file,txtFieldDef.getText() + ".jpg"));
     }
@@ -260,12 +289,11 @@ public class Launcher extends Application {
      */
     private void recognise(Label camLabel) {
         byte [] data = null;
-        BufferedImage image =null;
         try {
-            image = converter.convert(grabber.grab());
+            this.currentImg = converter.convert(grabber.grab());
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-            ImageIO.write(image, "jpg", bos );
+            ImageIO.write( this.currentImg, "jpg", bos );
             data= bos.toByteArray();
         }catch (Exception e){
         }
@@ -273,11 +301,11 @@ public class Launcher extends Application {
         float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
         updateGetLabels(copy, camLabel);
 
-        BufferedImage finalImage = image;
-        runCheckSaveFunction(()->saveImageWithSelectDir(finalImage, txtFieldDef.getText() + ".jpg"));
+        runCheckSaveFunction(()->saveImageWithSelectDir( this.currentImg, txtFieldDef.getText() + ".jpg"));
     }
+    //endregion
 
-    
+
     /*
     public Unit updateView(Frame frame){
         int w = frame.imageWidth();
@@ -301,6 +329,7 @@ public class Launcher extends Application {
         Button selectFileBtn = new Button();// select button
         this.txtFieldDef = new TextField();
         txtFieldDef.setPromptText("dog, cat ...");
+
         Label defFieldLabel = new Label("image description");
         //endregion
 
@@ -312,6 +341,7 @@ public class Launcher extends Application {
         //region top panel select buttons
         Button btnSourceCam = new Button();
         Button btnSourcePics = new Button();
+
         this.choiceBox = new ChoiceBox();
         this.directoryChooser = new DirectoryChooser();
         Button selectDirBtn = new Button();// select button
@@ -349,8 +379,10 @@ public class Launcher extends Application {
         btnSourceCam.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("video", "*.mp4");
+
             launchCam(camView);
 
+            //region repeat image recognition function
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
@@ -359,7 +391,7 @@ public class Launcher extends Application {
             };
             Timer timer = new Timer();
             timer.schedule( task, 0, 1000);
-
+            //endregion
         });
         //endregion
 
@@ -368,13 +400,7 @@ public class Launcher extends Application {
         btnSourcePics.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
-            try{
-                grabber.stop();
-                camView.setImage(null);
-                camLabel.setText(null);
-            }catch (Exception e){
-                System.out.println(e);
-            }
+            closeCam(camView, camLabel);
         });
         //endregion
         //endregion
@@ -419,23 +445,27 @@ public class Launcher extends Application {
         selectionPan.setStyle("-fx-background-color: #CD5C5C;");
         //endregion
 
-        //region center - image panel
+        //region right - image panel
         FlowPane selectedPicPan = new FlowPane(Orientation.VERTICAL);
         //selectedPicPan.setPrefWidth(rootWidth/4);
         selectedPicPan.setStyle("-fx-background-color: #CD5CCD;");
         selectedPicPan.getChildren().addAll( imageView, imageLabel);
         //endregion
 
+        //region center - cam panel
         FlowPane camPan = new FlowPane(Orientation.VERTICAL);
         //camPan.setPrefWidth(rootWidth/2);
         camPan.setStyle("-fx-background-color: #CD5CCD;");
         camPan.getChildren().addAll( camView, camLabel);
+        //endregion
 
+        //region add panel into Root panel
         root.setTop(sourceSelectPan);
         root.setLeft(selectionPan);
-        root.setCenter(camPan);
         root.setRight(selectedPicPan);
-
+        root.setCenter(camPan);
+        //endregion
+        
         primaryStage.show();
         //endregion
     }
