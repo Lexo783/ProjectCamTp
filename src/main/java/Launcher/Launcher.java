@@ -7,12 +7,15 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 
@@ -34,29 +37,31 @@ public class Launcher extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Hello World!");
 
-        // create a textfield
+        //region create textfield & it's label for image description
         TextField txtFieldDef = new TextField();
-        Label l = new Label("no text");
+        Label defFieldLabel = new Label("image description");
+        //endregion
+
+        //region create image view & it's label
         final ImageView imageView = new ImageView(); //place for image
+        Label imageLabel = new Label("no text");
+        //endregion
 
-        // Create Button
+        // region Create Button select file
         Button btn = new Button();
-        btn.setText("Say 'Hello World'");
+        btn.setText("Select a file");
         btn.setOnAction((action) -> {
-            System.out.println("Hello World!");
-
             File file = fileSelector.selectFile(primaryStage);
             float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
-            String[] allLabels = imageRecognition.getLabels();
-            this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, allLabels);
+            this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
             String bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
             System.out.println(this.allBestLabels);
-            System.out.println(bestLabel);
-            l.setText(bestLabel);
+            System.out.println(bestLabel); // #Story 1 - display label in console
+            imageLabel.setText(bestLabel); // #Story 2 - display found label for image
 
             //just try if img set works, it's fine. but seems image have to be in resources dir.
-            imageView.setImage(new Image(this.getClass().getResource("/inception5h/tensorPics/suncokret.jpg").toString()));
-
+            String[] pathArr = file.getAbsolutePath().split("/resources");
+            imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
 
             //region check our definition with labels found
             if (allBestLabels.containsKey(txtFieldDef.getText())){
@@ -68,13 +73,35 @@ public class Launcher extends Application {
             }
             //endregion
         });
+        //endregion
 
 
 
-        // action event
+        //region select sources buttons
+        //region button select source from cam
+        Button btnSourceCam = new Button();
+        btnSourceCam.setText("Select camera as source");
+        btnSourceCam.setOnAction((action) -> {
+            //add all extension for cam (or video)
+            fileSelector.setExtFilter("video", "*.mp4", "*.cam");
+        });
+        //endregion
+
+        //region button select source from pictures
+        Button btnSourcePics = new Button();
+        btnSourcePics.setText("Select picture as source");
+        btnSourcePics.setOnAction((action) -> {
+            //add all extension for cam (or video)
+            fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
+        });
+        //endregion
+        //endregion
+
+        //region action event - set image label for now
         EventHandler<ActionEvent> event = (ActionEvent e) -> {
-            l.setText(txtFieldDef.getText());
+            imageLabel.setText(txtFieldDef.getText());
         };
+        //endregion
 
         // when enter is pressed
         txtFieldDef.setOnAction(event);
@@ -84,16 +111,48 @@ public class Launcher extends Application {
             imageView.setImage(new Image(this.getClass().getResource("/img/jack.jpg").toString()));
         });
 
+
+
+        //region manage display -- background could change, just used to debug for now
+        //region initialize window
+        BorderPane root = new BorderPane();
+        final int rootWidth = 600;
+        final int rootheight = 600;
+        root.setStyle("-fx-background-color: #CCCCCC;");
+
+        primaryStage.setScene(new Scene(root, rootWidth, rootheight));
         imageView.setFitHeight(100);
         imageView.setFitWidth(100);
+        //endregion
 
-        TilePane root = new TilePane();
-        root.getChildren().add(btn);
-        // add textfield
-        root.getChildren().add(txtFieldDef);
-        root.getChildren().add(l);
-        root.getChildren().add(imageView);
-        primaryStage.setScene(new Scene(root, 600, 600));
+        //region top - select source panel
+        FlowPane sourceSelectPan = new FlowPane();
+        root.setStyle("-fx-background-color: #CDCD5C;");
+
+        sourceSelectPan.getChildren().add(btnSourceCam);
+        sourceSelectPan.getChildren().add(btnSourcePics);
+        //endregion
+
+
+        //region left - selectPic button + definition panel
+        FlowPane leftPan = new FlowPane(Orientation.VERTICAL);
+        leftPan.getChildren().addAll(btn, txtFieldDef, defFieldLabel);
+        leftPan.setStyle("-fx-background-color: #CD5C5C;");
+        //endregion
+
+        //region center - image panel
+        FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
+        picsSelectionPan.setPrefWidth(rootWidth);
+        picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
+        picsSelectionPan.getChildren().addAll( imageView, imageLabel);
+        //endregion
+
+
+        root.setCenter(picsSelectionPan);
+        root.setTop(sourceSelectPan);
+        root.setLeft(leftPan);
+
         primaryStage.show();
+        //endregion
     }
 }
