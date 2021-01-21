@@ -17,6 +17,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
 import java.awt.image.BufferedImage;
@@ -40,6 +41,8 @@ public class Launcher extends Application {
     private Map<String,Float> allBestLabels;
     private Java2DFrameConverter converter = new Java2DFrameConverter();
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
+    private DirectoryChooser directoryChooser;
+    private BorderPane root;
 
     public static void main(String[] args) {
         launch(args);
@@ -64,7 +67,6 @@ public class Launcher extends Application {
 //        Timer timer = new Timer();
 //        timer.schedule( task, 0, 1000);
 
-
         Runnable getFrameRunnable = new Runnable() {
             public void run() {
                 getOneCamFrame(camView);
@@ -72,7 +74,7 @@ public class Launcher extends Application {
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(getFrameRunnable, 0, 33, TimeUnit.MILLISECONDS);
+        executor.scheduleAtFixedRate(getFrameRunnable, 0, 33, TimeUnit.MILLISECONDS);//30fps
     }
 
     private void getOneCamFrame(ImageView camView){
@@ -84,6 +86,22 @@ public class Launcher extends Application {
             }
         } catch (Exception e) {}
 
+    }
+
+    private void saveImageFile(File fileToSave){
+        File selectedDirectory = directoryChooser.showDialog(new Stage());
+        if (selectedDirectory != null) {
+            try {
+                BufferedImage bufferedImage = ImageIO.read(fileToSave);
+                ImageIO.write(bufferedImage, "jpg", new File(selectedDirectory.getPath() +"/"+ fileToSave.getName()));
+            } catch (Exception ioException) {
+                ioException.printStackTrace();
+            }
+            //imageLabel.setText("save realised");
+            //imageLabel.setText("File couldn't be saved.");
+        }else{
+            //imageLabel.setText("save cancel");
+        }
     }
 
     /*
@@ -98,11 +116,11 @@ public class Launcher extends Application {
         val wi = WritableImage(pb);
         videoView.setImage(wi);
     }
-
      */
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Hello World!");
+        this.root = new BorderPane();
 
         //region create textfield & it's label for image description
         TextField txtFieldDef = new TextField();
@@ -114,6 +132,10 @@ public class Launcher extends Application {
         Label imageLabel = new Label("no text");
         //endregion
 
+        ChoiceBox choiceBox = new ChoiceBox();
+        Button btn = new Button();// select button
+        this.directoryChooser = new DirectoryChooser();
+
 
         //region cam
         ImageView camView  = new  ImageView();
@@ -123,7 +145,6 @@ public class Launcher extends Application {
 
 
         // region Create Button select file
-        Button btn = new Button();
         btn.setText("Select a file");
         btn.setOnAction((action) -> {
             File file = fileSelector.selectFile(primaryStage);
@@ -147,6 +168,16 @@ public class Launcher extends Application {
 
             }
             //endregion
+            for (Map.Entry mapentry : allBestLabels.entrySet()) {
+                float probaTF = (Float) mapentry.getValue() * 100;
+                int choiceProba = Integer.parseInt(choiceBox.getValue().toString().replaceAll("%", ""));
+                if(probaTF > choiceProba){
+                    //save file
+                    System.out.println( mapentry.getKey() + " as good proba: " + probaTF + "%");
+                    saveImageFile(file);
+                }
+            }
+
         });
         //endregion
 
@@ -158,7 +189,7 @@ public class Launcher extends Application {
         btnSourceCam.setText("Select camera as source");
         btnSourceCam.setOnAction((action) -> {
             //add all extension for cam (or video)
-            fileSelector.setExtFilter("video", "*.mp4", "*.cam");
+            fileSelector.setExtFilter("video", "*.mp4");
 
             /*
             TimerTask task = new TimerTask() {
@@ -208,81 +239,15 @@ public class Launcher extends Application {
             Timer timer = new Timer();
             timer.schedule( task, 0, 1000);
 
-            /*Runnable saveImg = new Runnable() {
-                public void run() {
-                    System.out.println("try to found cam image");
-                    BufferedImage bImage = SwingFXUtils.fromFXImage(camView.getImage(),null );
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    byte [] data = null;
-                    try {
-                        ImageIO.write(bImage, "jpg", bos );
-                        data= bos.toByteArray();
-                    }catch (Exception e){
-                        System.out.println("erreur byte arr----\n" + e);
-                    }
-
-                    System.out.println("avance");
-                    float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
-                    System.out.println("begin copy");
-
-                    allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
-                    System.out.println(" labels");
-
-                    String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
-                    System.out.println(allBestLabels);
-                    System.out.println(bestLabel); // #Story 5 - display label in console
-                    imageLabel.setText(bestLabel); // #Story 5 - display found label for image
-                    System.out.println("fin copy + labels");
-
-                    //region check our definition with labels found
-                    if (allBestLabels.containsKey(txtFieldDef.getText())){
-                        System.out.println("IA agree");
-                    }
-                    else{
-                        System.out.println("IA disagree");
-
-                    }
-                    //endregion
-                }
-            };
-            ScheduledExecutorService imgExecutor = Executors.newScheduledThreadPool(2);
-            imgExecutor.scheduleAtFixedRate(saveImg, 0, 2, TimeUnit.SECONDS);
-*/
         });
         //endregion
 
-        ChoiceBox choiceBox = new ChoiceBox();
         choiceBox.getItems().addAll("50%", "60%", "70%","80%","90%","100%");
 
         choiceBox.setOnAction(event1 -> {
             System.out.println(choiceBox.getValue());
         });
 
-        /*
-        Button button1 = new Button("Save File");
-        button1.setTranslateY(30);
-        button1.setOnAction(e -> {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            directoryChooser.setTitle("Save file");
-            File selectedDirectory = directoryChooser.showDialog(new Stage());
-            if (selectedDirectory != null) {
-                BufferedImage bufferedImage = null;
-                try {
-                    bufferedImage = ImageIO.read(fileToSave);
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-                try {
-                    ImageIO.write(bufferedImage, "jpg", new File(selectedDirectory.getPath() +"/"+ fileToSave.getName() + ".jpg"));
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-                imageLabel.setText("save realised");
-                    imageLabel.setText("File couldn't be saved.");
-            }else{
-                imageLabel.setText("save cancel");
-            }
-        });*/
 
         //region button select source from pictures
         Button btnSourcePics = new Button();
@@ -317,7 +282,6 @@ public class Launcher extends Application {
 
         //region manage display -- background could change, just used to debug for now
         //region initialize window
-        BorderPane root = new BorderPane();
         final int rootWidth = 1200;
         final int rootheight = 700;
         root.setStyle("-fx-background-color: #CCCCCC;");
