@@ -5,6 +5,7 @@ import Services.ImageRecognition;
 import Services.Matrix;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -21,6 +22,7 @@ import javafx.embed.swing.SwingFXUtils;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import javafx.scene.image.*;
+import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -324,6 +326,13 @@ public class Launcher extends Application {
     public void start(Stage primaryStage) {
         //region initialise all elements
         primaryStage.setTitle("Hello World!");
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent t) {
+                Platform.exit();
+                System.exit(0);
+            }
+        });
         this.root = new BorderPane();
 
         //region create textfield & it's label for image description
