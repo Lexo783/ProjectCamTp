@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,9 +19,30 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
+import javafx.embed.swing.SwingFXUtils;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import javafx.scene.image.*;
+import org.bytedeco.javacv.*;
+import org.bytedeco.opencv.global.opencv_imgproc.*;
+import org.bytedeco.opencv.opencv_core.IplImage;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
+
+import javax.imageio.ImageIO;
 import java.io.File;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Launcher extends Application {
 
@@ -28,11 +50,68 @@ public class Launcher extends Application {
     private ImageRecognition imageRecognition = new ImageRecognition();
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
+    private Java2DFrameConverter converter = new Java2DFrameConverter();
+    private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
 
     public static void main(String[] args) {
         launch(args);
     }
 
+
+    private WritableImage frameToImage(Frame frame) {
+        BufferedImage bufferedImage = converter.getBufferedImage(frame);
+        return SwingFXUtils.toFXImage(bufferedImage, null);
+    }
+    private void launchCam(ImageView camView){
+        try {
+            grabber.start();
+        }catch (Exception e){}
+//        TimerTask task = new TimerTask() {
+//            @Override
+//            public void run() {
+//
+//                getOneCamFrame(camView);
+//            }
+//        };
+//        Timer timer = new Timer();
+//        timer.schedule( task, 0, 1000);
+
+
+        Runnable getFrameRunnable = new Runnable() {
+            public void run() {
+                getOneCamFrame(camView);
+            }
+        };
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(getFrameRunnable, 0, 33, TimeUnit.MILLISECONDS);
+    }
+
+    private void getOneCamFrame(ImageView camView){
+        try {
+            Frame frame = grabber.grab(); // Frame frame = grabber.grabFrame();
+            if (frame != null) {
+                WritableImage img = frameToImage(frame);
+                camView.setImage(img);
+            }
+        } catch (Exception e) {}
+
+    }
+
+    /*
+    public Unit updateView(Frame frame){
+        int w = frame.imageWidth();
+        int h = frame.imageHeight();
+
+        val mat = javaCVConv.convert(frame);
+        cvtColor(mat, javaCVMat, COLOR_BGR2BGRA);
+
+        val pb = PixelBuffer(w, h, buffer, formatByte);
+        val wi = WritableImage(pb);
+        videoView.setImage(wi);
+    }
+
+     */
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Hello World!");
@@ -46,6 +125,14 @@ public class Launcher extends Application {
         final ImageView imageView = new ImageView(); //place for image
         Label imageLabel = new Label("no text");
         //endregion
+
+
+        //region cam
+        ImageView camView  = new  ImageView();
+        grabber.setImageWidth(300);
+        grabber.setImageHeight(300);
+        //endregion
+
 
         // region Create Button select file
         Button btn = new Button();
@@ -84,6 +171,95 @@ public class Launcher extends Application {
         btnSourceCam.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("video", "*.mp4", "*.cam");
+
+            /*
+            TimerTask task = new TimerTask() {
+
+                @Override
+                public void run() {
+                    launchCam(camView);
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule( task, 0, 1000);*/
+            launchCam(camView);
+
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    System.out.println("try to found cam image");
+                    byte [] data = null;
+                    try {
+                        Frame frameTest = grabber.grab();
+                        BufferedImage imgTest = converter.convert(frameTest);
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+                        ImageIO.write(imgTest, "jpg", bos );
+                        data= bos.toByteArray();
+                    }catch (Exception e){
+                    }
+
+                    float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+                    allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
+                    String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
+                    System.out.println(allBestLabels);
+                    System.out.println(bestLabel); // #Story 5 - display label in console
+                    imageLabel.setText(bestLabel); // #Story 5 - display found label for image
+
+                    //region check our definition with labels found
+                    if (allBestLabels.containsKey(txtFieldDef.getText())){
+                        System.out.println("IA agree");
+                    }
+                    else{
+                        System.out.println("IA disagree");
+
+                    }
+                    //endregion
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule( task, 0, 1000);
+
+            /*Runnable saveImg = new Runnable() {
+                public void run() {
+                    System.out.println("try to found cam image");
+                    BufferedImage bImage = SwingFXUtils.fromFXImage(camView.getImage(),null );
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    byte [] data = null;
+                    try {
+                        ImageIO.write(bImage, "jpg", bos );
+                        data= bos.toByteArray();
+                    }catch (Exception e){
+                        System.out.println("erreur byte arr----\n" + e);
+                    }
+
+                    System.out.println("avance");
+                    float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+                    System.out.println("begin copy");
+
+                    allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
+                    System.out.println(" labels");
+
+                    String bestLabel = imageRecognition.getImagePotentialLabel(allBestLabels);
+                    System.out.println(allBestLabels);
+                    System.out.println(bestLabel); // #Story 5 - display label in console
+                    imageLabel.setText(bestLabel); // #Story 5 - display found label for image
+                    System.out.println("fin copy + labels");
+
+                    //region check our definition with labels found
+                    if (allBestLabels.containsKey(txtFieldDef.getText())){
+                        System.out.println("IA agree");
+                    }
+                    else{
+                        System.out.println("IA disagree");
+
+                    }
+                    //endregion
+                }
+            };
+            ScheduledExecutorService imgExecutor = Executors.newScheduledThreadPool(2);
+            imgExecutor.scheduleAtFixedRate(saveImg, 0, 2, TimeUnit.SECONDS);
+*/
         });
         //endregion
 
@@ -93,6 +269,11 @@ public class Launcher extends Application {
         btnSourcePics.setOnAction((action) -> {
             //add all extension for cam (or video)
             fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
+            try{
+                grabber.stop();
+            }catch (Exception e){
+                System.out.println(e);
+            }
         });
         //endregion
         //endregion
@@ -116,8 +297,8 @@ public class Launcher extends Application {
         //region manage display -- background could change, just used to debug for now
         //region initialize window
         BorderPane root = new BorderPane();
-        final int rootWidth = 600;
-        final int rootheight = 600;
+        final int rootWidth = 1200;
+        final int rootheight = 700;
         root.setStyle("-fx-background-color: #CCCCCC;");
 
         primaryStage.setScene(new Scene(root, rootWidth, rootheight));
@@ -152,6 +333,7 @@ public class Launcher extends Application {
         root.setTop(sourceSelectPan);
         root.setLeft(leftPan);
 
+        root.setRight(camView);
         primaryStage.show();
         //endregion
     }
