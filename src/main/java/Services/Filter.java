@@ -40,11 +40,21 @@ public class Filter {
             case "Classik":
                 System.out.println(this.getClass().getResource("/img/cadre3c.png").toString());
                 return this.getClass().getResource("/img/cadre3c.png").toString();
+            case "Or":
+                return this.getClass().getResource("/img/cadreOr.png").toString();
             default:
                 return null;
         }
     }
 
+    /**
+     * @deprecated
+     * @param resBottom
+     * @param widthBottom
+     * @param heightBottom
+     * @param cadreTop
+     * @return
+     */
     public Group filterCadre(ImageView resBottom, double widthBottom, double heightBottom, Image cadreTop)
     {
         ImageView top = new ImageView(cadreTop);
@@ -61,5 +71,14 @@ public class Filter {
                 top
         );
         return blend;
+    }
+
+    public String getStamp(String typeStamp){
+        switch (typeStamp){
+            case "Approved":
+                return this.getClass().getResource("/img/approved.png").toString();
+            default:
+                return null;
+        }
     }
 }
