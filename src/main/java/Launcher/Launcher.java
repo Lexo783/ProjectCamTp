@@ -8,20 +8,18 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.Lighting;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
 import java.awt.image.BufferedImage;
 import java.io.*;
-
 import javafx.scene.image.*;
 import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
@@ -44,8 +42,9 @@ public class Launcher extends Application {
     Filter filter = new Filter();
     private final FileSelector fileSelectorFilter = new FileSelector();
     private ChoiceBox choiceBox;
+    private String currentFilter;
     private TextField txtFieldDef;
-
+    private String bestLabel;
     private ImageRecognition imageRecognition = new ImageRecognition();
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
@@ -184,7 +183,7 @@ public class Launcher extends Application {
      * @param name  image file's name
      */
     private void saveImageWithSelectDir(BufferedImage image, String name){
-        System.out.println("save in dir : " + name);
+        System.out.println("save in dir : " + this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter);
 
         if (this.getCurrentDirStoragePath()==null){
             File selectedDirectory = selectStorageDir();
@@ -222,7 +221,7 @@ public class Launcher extends Application {
     private void updateGetLabels(float[][] copy, Label label){
         this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
         System.out.println(allBestLabels);
-        String bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
+        this.bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
         System.out.println(bestLabel);
         setLabelText(label, bestLabel);
     }
@@ -322,8 +321,6 @@ public class Launcher extends Application {
         });
     }
 
-
-
     @Override
     public void start(Stage primaryStage) {
         //region initialise all elements
@@ -392,6 +389,11 @@ public class Launcher extends Application {
         selectFileBtn.setOnAction((action) -> {
             File file = fileSelector.selectFile(primaryStage);
             recognise(file, imageLabel, imageView);
+            Lighting effectColor = this.filter.filterColor(choiceBoxFilter);
+            if (effectColor != null)
+                imageView.setEffect(effectColor);
+            BufferedImage backImg = SwingFXUtils.fromFXImage(imageView.getImage(), null);
+            saveImageWithSelectDir(backImg,this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter+".jpg");
         });
         //endregion
 
@@ -400,6 +402,7 @@ public class Launcher extends Application {
         selectDirBtn.setText("Select Dir");
         selectDirBtn.setOnAction((action) -> {
             this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
+
         });
         //endregion
 
@@ -447,11 +450,15 @@ public class Launcher extends Application {
         });
         //endregion
 
+        choiceBoxFilter.getItems().addAll("No Filter", "Red", "Blue", "Green");
+        choiceBoxFilter.setOnAction(event -> {
+            this.currentFilter = choiceBoxFilter.getValue().toString();
+        });
+
         choiceBoxFilter3.getItems().addAll("No Filter", "Classik");
 
         choiceBoxFilter2.getItems().addAll("No Filter", "Red", "Blue", "Green");
         ImageView imageView2 = new ImageView();
-        final Group[] blend = {new Group()};
 
         btnSourcePicsNoIA.setOnAction(event1 -> {
             //Get path to Image
@@ -460,9 +467,9 @@ public class Launcher extends Application {
             Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
 
             imageView2.setImage(resBottom);
-            Color filterColor = this.filter.setColor(choiceBoxFilter2.getValue().toString());
-            if (filterColor != null)
-                imageView2.setEffect(this.filter.filterColor(filterColor));
+            Lighting effectColor = this.filter.filterColor(choiceBoxFilter2);
+            if (effectColor != null)
+                imageView2.setEffect(effectColor);
         });
         Label labelCadre = new Label();
         choiceBoxFilter3.setOnAction(event1 -> {
@@ -545,7 +552,7 @@ public class Launcher extends Application {
         //region add panel into Root panel
         root.setTop(sourceSelectPan);
         root.setLeft(selectionPan);
-        root.setRight(selectedPicPan);
+        root.setRight(picsSelectionPan);
         root.setCenter(camPan);
         //endregion
 
