@@ -449,8 +449,15 @@ public class Launcher extends Application {
             if (y>50){
                 y = 50;
             }
+            else if (y<0){
+                y=0;
+            }
+
             if (x>60){
                 x=60;
+            }
+            else if (x<0){
+                x=0;
             }
             labelTampon.setTranslateY(-145 - y);
             labelTampon.setTranslateX(60 - x);
