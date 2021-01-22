@@ -340,8 +340,10 @@ public class Launcher extends Application {
      * @param imageView => ImageView to refresh
      */
     private void refreshImageView(ImageView imageView){
-        WritableImage writableImage = SwingFXUtils.toFXImage(this.currentImg, null);
-        imageView.setImage(writableImage);
+        if(this.currentImg!=null) {
+            WritableImage writableImage = SwingFXUtils.toFXImage(this.currentImg, null);
+            imageView.setImage(writableImage);
+        }
     }
     //endregion
 
@@ -373,7 +375,7 @@ public class Launcher extends Application {
     public void start(Stage primaryStage) {
         //region initialise all elements
         //region primaryStage setup
-        primaryStage.setTitle("Hello World!");
+        primaryStage.setTitle("Image identifier");
         primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent t) {
@@ -403,8 +405,6 @@ public class Launcher extends Application {
         ChoiceBox choiceBoxPercent = new ChoiceBox(); // choice percentage to allow image save
         choiceBoxPercent.setValue("Percent confidence");
 
-        ChoiceBox choiceBoxFilter = new ChoiceBox();
-        choiceBoxFilter.setValue("No Filter");
 
         ChoiceBox choiceBoxFilterColor = new ChoiceBox(); //  choice image color filter
         choiceBoxFilterColor.setValue("No Filter");
@@ -440,7 +440,7 @@ public class Launcher extends Application {
         btnSourceCam.setText("Select camera as source");
         btnSourceCam.setOnAction((action) -> {
             launchCam(camView);
-
+            imageLabel.setText("");
             //region repeat image recognition function
             if (!this.isExecutorLaunched) {
                 TimerTask task = new TimerTask() {
@@ -501,6 +501,7 @@ public class Launcher extends Application {
             Color filterColor = this.filter.setColor(choiceBoxFilterColor.getValue().toString());
             if (filterColor != null)
                 imageView.setEffect(this.filter.filterColor(filterColor));
+            this.currentFilter = choiceBoxFilterColor.getValue().toString();
         });
         //endregion
 
@@ -548,7 +549,7 @@ public class Launcher extends Application {
         //endregion
 
 
-        
+
 
         final Group[] blend = {new Group()};
 
@@ -590,11 +591,11 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(btnSourceCam);
         sourceSelectPan.getChildren().add(selectFileBtn);
         sourceSelectPan.getChildren().add(choiceBoxPercent);
-        sourceSelectPan.getChildren().add(choiceBoxFilter);
 
         sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
         sourceSelectPan.getChildren().add(choiceBoxFilterColor);
         sourceSelectPan.getChildren().add(choiceBoxFilterFramework);
+
         sourceSelectPan.getChildren().add(selectDirBtn);
         sourceSelectPan.getChildren().add(btnSave);
         //endregion
