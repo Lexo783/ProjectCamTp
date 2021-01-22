@@ -440,7 +440,13 @@ public class Launcher extends Application {
             imageView4.setFitWidth(30);
             imageView4.setFitHeight(30);
 
-            labelTampon.setTranslateY(-145 + y);
+            if (y>50){
+                y = 50;
+            }
+            if (x>60){
+                x=60;
+            }
+            labelTampon.setTranslateY(-145 - y);
             labelTampon.setTranslateX(60 - x);
             labelTampon.setGraphic(imageView4);
             labelTampon.setVisible(true);
@@ -673,8 +679,6 @@ public class Launcher extends Application {
             viewSaveSnapshot(imageView);
         });
         //endregion
-
-
 
 
 
