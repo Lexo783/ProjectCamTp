@@ -35,9 +35,9 @@ public class Filter {
         switch (typeCadre){
             case "Classik":
                 System.out.println(this.getClass().getResource("/img/cadre3c.png").toString());
-                return this.getClass().getResource("/img/cadre3c.png").toString();
+                return "/img/cadre3c.png";
             case "Or":
-                return this.getClass().getResource("/img/cadreOr.png").toString();
+                return "/img/cadreOr.png";
             default:
                 return null;
         }
@@ -47,7 +47,9 @@ public class Filter {
         switch (typeCadre){
             case "Certifié":
                 System.out.println(this.getClass().getResource("/img/certified.png").toString());
-                return this.getClass().getResource("/img/certified.png").toString();
+                return "/img/certified.png";
+            case "Approved":
+                return "/img/approved.png";
             default:
                 return null;
         }

@@ -391,6 +391,29 @@ public class Launcher extends Application {
     }
 
     /**
+     * Apply a cadre on a label, that will be displayed over an image.
+     * it will change depending on path given.
+     * @param resourcePath => path from resources Directory
+     */
+    public void setCadre(String resourcePath){
+        try {
+            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main" + resourcePath);
+            Image image = new Image(stream);
+            ImageView imageView3 = new ImageView(image);
+            imageView3.setFitWidth(100);
+            imageView3.setFitHeight(100);
+            labelCadre.setTranslateY(-100);
+            labelCadre.setGraphic(imageView3);
+            labelCadre.setVisible(true);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
      * Apply a Stamp on a label, that will be displayed over an image
      */
     public void setStamp(){
@@ -410,6 +433,25 @@ public class Launcher extends Application {
         }
     }
 
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(String resourcePath){
+        try {
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main" + resourcePath);
+            Image image = new Image(stream);
+            ImageView imageView4 = new ImageView(image);
+            imageView4.setFitWidth(30);
+            imageView4.setFitHeight(30);
+
+            labelTampon.setTranslateY(-145);
+            labelTampon.setTranslateX(60);
+            labelTampon.setGraphic(imageView4);
+            labelTampon.setVisible(true);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
     //endregion
 
     /**
@@ -571,11 +613,11 @@ public class Launcher extends Application {
         setCadre();
         setStamp();
         //region choice box framework filter
-        choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
+        choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik", "Or");
         choiceBoxFilterFramework.setOnAction(event1 -> {
                 if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
-                    this.labelCadre.setVisible(true);
+                    setCadre(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
                 }
                 else
                 {
@@ -589,11 +631,11 @@ public class Launcher extends Application {
         //endregion
 
         //region choice box framework filter
-        choiceBoxFilterFrameworkCertified.getItems().addAll("No Filter", "Certifié");
+        choiceBoxFilterFrameworkCertified.getItems().addAll("No Filter", "Certifié", "Approved");
         choiceBoxFilterFrameworkCertified.setOnAction(event1 -> {
             if (this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()) != null)
             {
-                this.labelTampon.setVisible(true);
+                setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()));
             }
             else
             {
