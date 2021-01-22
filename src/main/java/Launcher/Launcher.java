@@ -8,7 +8,6 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -56,7 +55,6 @@ public class Launcher extends Application {
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
-    private BufferedImage imgForFilter;
 
     private String currentDirStoragePath;
     private Label labelCadre = new Label();
@@ -273,7 +271,7 @@ public class Launcher extends Application {
     private void recognise(File file, Label imageLabel, ImageView imageView){
         float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
         updateGetLabels(copy, imageLabel);
-        //just try if img set works, it's fine. but seems image have to be in resources dir.
+
         String[] pathArr = file.getAbsolutePath().split("/resources");
         imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
         try {
@@ -328,9 +326,9 @@ public class Launcher extends Application {
 
         StringBuilder filterApplied = new StringBuilder();
         for (Map.Entry mapEntry : this.filterMap.entrySet()) {
-            filterApplied.append("_" + mapEntry.getValue());
+            filterApplied.append("_" + mapEntry.getKey() + "(" + mapEntry.getValue() + ")" );
         }
-        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter" + filterApplied.toString() +".jpg";
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-" + filterApplied.toString() +".jpg";
         saveImageWithSelectDir(bufImageRGB, fileName);
         graphics.dispose();
         System.out.println( "Image saved at: " + fileName);
@@ -347,6 +345,71 @@ public class Launcher extends Application {
             imageView.setImage(writableImage);
         }
     }
+
+    /**
+     * Refresh an imageView thanks to currentImage, and apply color filter.
+     * @param imageView => ImageView to resfresh
+     */
+    private void setViewColorWithRefresh(ImageView imageView){
+        refreshImageView(imageView);
+        setViewColor(imageView);
+    }
+
+    /**
+     * Set an imageView color filter depending on currentColorFilter.
+     * @param imageView => ImageView to update
+     */
+    private void setViewColor(ImageView imageView){
+        try {
+            Color filterColor = this.filter.getColor(this.currentColorFilter);
+            if (filterColor != null) {
+                imageView.setEffect(this.filter.filterColor(filterColor));
+            } else {
+                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
+            }
+        }catch (Exception e){
+        }
+    }
+
+    /**
+     * Apply a cadre on a label, that will be displayed over an image
+     */
+    public void setCadre(){
+        try {
+            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
+            Image image = new Image(stream);
+            ImageView imageView3 = new ImageView(image);
+            imageView3.setFitWidth(100);
+            imageView3.setFitHeight(100);
+            labelCadre.setTranslateY(-100);
+            labelCadre.setGraphic(imageView3);
+            labelCadre.setVisible(false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(){
+        try {
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/certified.png");
+            Image image = new Image(stream);
+            ImageView imageView4 = new ImageView(image);
+            imageView4.setFitWidth(30);
+            imageView4.setFitHeight(30);
+
+            labelTampon.setTranslateY(-145);
+            labelTampon.setTranslateX(60);
+            labelTampon.setGraphic(imageView4);
+            labelTampon.setVisible(false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     //endregion
 
     /**
@@ -372,55 +435,9 @@ public class Launcher extends Application {
         });
     }
 
-    private void setViewColorWithRefresh(ImageView imageView){
-        refreshImageView(imageView);
-        setViewColor(imageView);
-    }
 
-    private void setViewColor(ImageView imageView){
-        try {
-            Color filterColor = this.filter.getColor(this.currentColorFilter);
-            if (filterColor != null) {
-                imageView.setEffect(this.filter.filterColor(filterColor));
-            } else {
-                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
-            }
-        }catch (Exception e){
-        }
-    }
 
-    public void setCadre(){
-        try {
-            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
-            Image image = new Image(stream);
-            ImageView imageView3 = new ImageView(image);
-            imageView3.setFitWidth(100);
-            imageView3.setFitHeight(100);
-            labelCadre.setTranslateY(-100);
-            labelCadre.setGraphic(imageView3);
-            labelCadre.setVisible(false);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
 
-    public void setTampon(){
-        try {
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/certified.png");
-            Image image = new Image(stream);
-            ImageView imageView4 = new ImageView(image);
-            imageView4.setFitWidth(30);
-            imageView4.setFitHeight(30);
-
-            labelTampon.setTranslateY(-145);
-            labelTampon.setTranslateX(60);
-            labelTampon.setGraphic(imageView4);
-            labelTampon.setVisible(false);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -552,7 +569,7 @@ public class Launcher extends Application {
         //endregion
 
         setCadre();
-        setTampon();
+        setStamp();
         //region choice box framework filter
         choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
         choiceBoxFilterFramework.setOnAction(event1 -> {
