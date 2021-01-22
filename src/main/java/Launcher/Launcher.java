@@ -126,6 +126,7 @@ public class Launcher extends Application {
             if (frame != null) {
                 WritableImage img = frameToImage(frame);
                 camView.setImage(img);
+                setViewColor(camView);
             }
         } catch (Exception e) {}
     }
@@ -369,8 +370,12 @@ public class Launcher extends Application {
         });
     }
 
-    private void setViewColor(ImageView imageView){
+    private void setViewColorWithRefresh(ImageView imageView){
         refreshImageView(imageView);
+        setViewColor(imageView);
+    }
+
+    private void setViewColor(ImageView imageView){
         try {
             Color filterColor = this.filter.getColor(this.currentColorFilter);
             if (filterColor != null) {
@@ -480,7 +485,7 @@ public class Launcher extends Application {
 
             //region apply color filter on load
             if(file != null){
-                setViewColor(imageView);
+                setViewColorWithRefresh(imageView);
             }
             //endregion
 
@@ -503,7 +508,7 @@ public class Launcher extends Application {
         choiceBoxFilterColor.getItems().addAll("No Filter", "Red", "Blue", "Green");
         choiceBoxFilterColor.setOnAction(event1 -> {
             this.currentColorFilter = choiceBoxFilterColor.getValue().toString();
-            setViewColor(imageView);
+            setViewColorWithRefresh(imageView);
         });
         //endregion
 
