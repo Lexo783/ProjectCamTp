@@ -33,9 +33,8 @@ import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 
 import javax.imageio.ImageIO;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +49,7 @@ public class Launcher extends Application {
     private BorderPane root;
     private Filter filter = new Filter();
     private String currentColorFilter;
-    private final FileSelector fileSelectorFilter = new FileSelector();
+    private Map<String, String> filterMap = new HashMap<String, String>();
     private ChoiceBox choiceBox;
     private TextField txtFieldDef;
 
@@ -328,7 +327,11 @@ public class Launcher extends Application {
         Graphics2D graphics = bufImageRGB.createGraphics();
         graphics.drawImage(bufImageARGB, 0, 0, null);
 
-        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentColorFilter + ".jpg";
+        StringBuilder filterApplied = new StringBuilder();
+        for (Map.Entry mapEntry : this.filterMap.entrySet()) {
+            filterApplied.append("_" + mapEntry.getValue());
+        }
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter" + filterApplied.toString() +".jpg";
         saveImageWithSelectDir(bufImageRGB, fileName);
         graphics.dispose();
         System.out.println( "Image saved at: " + fileName);
@@ -508,6 +511,10 @@ public class Launcher extends Application {
         choiceBoxFilterColor.getItems().addAll("No Filter", "Red", "Blue", "Green");
         choiceBoxFilterColor.setOnAction(event1 -> {
             this.currentColorFilter = choiceBoxFilterColor.getValue().toString();
+            this.filterMap.put("colorFilter", this.currentColorFilter);
+            if (this.filterMap.containsKey("colorFilter") && this.currentColorFilter.equals("No Filter")){
+                this.filterMap.remove("colorFilter");
+            }
             setViewColorWithRefresh(imageView);
         });
         //endregion
@@ -517,6 +524,8 @@ public class Launcher extends Application {
         choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
         choiceBoxFilterFramework.setOnAction(event1 -> {
             try {
+
+                System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
                 if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
                     InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
@@ -531,6 +540,10 @@ public class Launcher extends Application {
                 else
                 {
                     labelCadre.setVisible(false);
+                }
+                this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+                if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                    this.filterMap.remove("frameworkFilter");
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
