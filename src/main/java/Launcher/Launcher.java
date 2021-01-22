@@ -528,7 +528,8 @@ public class Launcher extends Application {
                 System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
                 if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
-                    InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
+                    //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
+                    InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
                     Image image = new Image(stream);
                     ImageView imageView3 = new ImageView(image);
                     imageView3.setFitWidth(100);
@@ -632,7 +633,7 @@ public class Launcher extends Application {
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
-        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre);
+        picsSelectionPan.getChildren().addAll( imageView, labelCadre, imageLabel, imageView2);
 
         //endregion
 
