@@ -1,7 +1,6 @@
 package Services;
 
 import javafx.scene.Group;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
@@ -24,15 +23,14 @@ public class Filter {
         }
     }
 
-    public Lighting filterColor(ChoiceBox choiceBoxFilter)
+    public Lighting filterColor(Color color)
     {
-        Color filterColor = setColor(choiceBoxFilter.getValue().toString());
         Lighting lighting = new Lighting();
         lighting.setDiffuseConstant(1.0);
         lighting.setSpecularConstant(0.0);
         lighting.setSpecularExponent(0.0);
         lighting.setSurfaceScale(0.0);
-        lighting.setLight(new Light.Distant(45, 45, filterColor));
+        lighting.setLight(new Light.Distant(45, 45, color));
 
         return lighting;
     }
@@ -49,38 +47,4 @@ public class Filter {
         }
     }
 
-    /**
-     * @deprecated
-     * @param resBottom
-     * @param widthBottom
-     * @param heightBottom
-     * @param cadreTop
-     * @return
-     */
-    public Group filterCadre(ImageView resBottom, double widthBottom, double heightBottom, Image cadreTop)
-    {
-        ImageView top = new ImageView(cadreTop);
-
-        resBottom.setFitWidth(widthBottom);
-        resBottom.setFitHeight(heightBottom);
-
-        top.setFitWidth(resBottom.getFitWidth());
-        top.setFitHeight(resBottom.getFitHeight());
-
-        top.setBlendMode(BlendMode.SRC_OVER);
-        Group blend = new Group(
-                resBottom,
-                top
-        );
-        return blend;
-    }
-
-    public String getStamp(String typeStamp){
-        switch (typeStamp){
-            case "Approved":
-                return this.getClass().getResource("/img/approved.png").toString();
-            default:
-                return null;
-        }
-    }
 }
