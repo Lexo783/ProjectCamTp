@@ -11,21 +11,31 @@ import javafx.geometry.Orientation;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
 import java.io.*;
 
 import javafx.scene.image.*;
 import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
+import org.bytedeco.javacv.Frame;
+
 import javax.imageio.ImageIO;
+import java.nio.Buffer;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -41,7 +51,8 @@ public class Launcher extends Application {
     private Java2DFrameConverter converter = new Java2DFrameConverter();
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     private BorderPane root;
-    Filter filter = new Filter();
+    private Filter filter = new Filter();
+    private String currentFilter;
     private final FileSelector fileSelectorFilter = new FileSelector();
     private ChoiceBox choiceBox;
     private TextField txtFieldDef;
@@ -49,6 +60,7 @@ public class Launcher extends Application {
     private ImageRecognition imageRecognition = new ImageRecognition();
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
+    private String bestLabel;
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
@@ -222,9 +234,9 @@ public class Launcher extends Application {
     private void updateGetLabels(float[][] copy, Label label){
         this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
         System.out.println(allBestLabels);
-        String bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
-        System.out.println(bestLabel);
-        setLabelText(label, bestLabel);
+        this.bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
+        System.out.println(this.bestLabel);
+        setLabelText(label, this.bestLabel);
     }
 
     /**
@@ -311,6 +323,8 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
 
+
+
     /**
      * Set label text value in FX thread.
      * @param label => a label to update
@@ -323,6 +337,25 @@ public class Launcher extends Application {
     }
 
 
+    /**
+     * Take a snapshot of an ImageView and save the image into a directory
+     * @param imageView
+     */
+    private void viewSaveSnapshot(ImageView imageView){
+        WritableImage writableImage = new WritableImage((int) imageView.getFitWidth(), (int)imageView.getFitHeight());
+        imageView.snapshot(null, writableImage);
+
+        BufferedImage bufImageARGB = SwingFXUtils.fromFXImage(writableImage, null);
+        BufferedImage bufImageRGB = new BufferedImage(bufImageARGB.getWidth(), bufImageARGB.getHeight(), BufferedImage.OPAQUE);
+
+        Graphics2D graphics = bufImageRGB.createGraphics();
+        graphics.drawImage(bufImageARGB, 0, 0, null);
+
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter + ".jpg";
+        saveImageWithSelectDir(bufImageRGB, fileName);
+        graphics.dispose();
+        System.out.println( "Image saved at: " + fileName);
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -350,6 +383,7 @@ public class Launcher extends Application {
         Label imageLabel = new Label("no text");
         //endregion
 
+        //region filters boxes
         ChoiceBox choiceBox = new ChoiceBox();
         choiceBox.setValue("Percent confidence");
 
@@ -361,6 +395,7 @@ public class Launcher extends Application {
 
         ChoiceBox choiceBoxFilter3 = new ChoiceBox();
         choiceBoxFilter3.setValue("No Cadre");
+        //endregion
 
         Button btn = new Button();// select button
         this.directoryChooser = new DirectoryChooser();
@@ -370,7 +405,6 @@ public class Launcher extends Application {
 
         //region top panel select buttons
         Button btnSourceCam = new Button();
-        Button btnSourcePics = new Button();
 
         this.choiceBox = new ChoiceBox();
         this.directoryChooser = new DirectoryChooser();
@@ -388,10 +422,23 @@ public class Launcher extends Application {
         //endregion
 
         // region Create Button select file
-        selectFileBtn.setText("Select a file");
+        selectFileBtn.setText("Select picture as source");
         selectFileBtn.setOnAction((action) -> {
+            fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
+            closeCam(camView, camLabel);
+            this.isExecutorLaunched = false;
+
             File file = fileSelector.selectFile(primaryStage);
             recognise(file, imageLabel, imageView);
+            if(file != null){
+                try {
+                    Color filterColor = this.filter.setColor(choiceBoxFilter2.getValue().toString());
+                    if (filterColor != null)
+                        imageView.setEffect(this.filter.filterColor(filterColor));
+                    viewSaveSnapshot(imageView);
+                } catch (Exception ex) { ex.printStackTrace(); }
+            }
+
         });
         //endregion
 
@@ -428,16 +475,6 @@ public class Launcher extends Application {
         });
         //endregion
 
-        //region button select source from pictures
-        btnSourcePics.setText("Select picture as source");
-        btnSourcePics.setOnAction((action) -> {
-            //add all extension for cam (or video)
-            fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
-            closeCam(camView, camLabel);
-            this.isExecutorLaunched = false;
-
-        });
-        //endregion
 
         //region checkbox percent confidence
         choiceBox.getItems().addAll("5%", "50%", "60%", "70%","80%","90%","100%");
@@ -507,7 +544,7 @@ public class Launcher extends Application {
         root.setStyle("-fx-background-color: #CDCD5C;");
 
         sourceSelectPan.getChildren().add(btnSourceCam);
-        sourceSelectPan.getChildren().add(btnSourcePics);
+        sourceSelectPan.getChildren().add(selectFileBtn);
         sourceSelectPan.getChildren().add(choiceBox);
         sourceSelectPan.getChildren().add(choiceBoxFilter);
 
@@ -521,11 +558,11 @@ public class Launcher extends Application {
         //region left - selectPic button + definition panel
         FlowPane selectionPan = new FlowPane(Orientation.VERTICAL);
         //selectionPan.setPrefWidth(rootWidth/4);
-        selectionPan.getChildren().addAll(selectFileBtn, txtFieldDef, defFieldLabel);
+        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel);
         selectionPan.setStyle("-fx-background-color: #CD5C5C;");
         //endregion
         
-        //region center - image panel
+        //region right - image panel
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
@@ -545,7 +582,7 @@ public class Launcher extends Application {
         //region add panel into Root panel
         root.setTop(sourceSelectPan);
         root.setLeft(selectionPan);
-        root.setRight(selectedPicPan);
+        root.setRight(picsSelectionPan);
         root.setCenter(camPan);
         //endregion
 
