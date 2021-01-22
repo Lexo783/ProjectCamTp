@@ -39,7 +39,7 @@ public class Filter {
         switch (typeCadre){
             case "Classik":
                 System.out.println(this.getClass().getResource("/img/cadre3c.png").toString());
-                return this.getClass().getResource("/img/cadre3c.png").toString();
+                return "/img/cadre3c.png";
             case "Or":
                 return this.getClass().getResource("/img/cadreOr.png").toString();
             default:

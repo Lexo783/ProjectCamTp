@@ -317,7 +317,7 @@ public class Launcher extends Application {
      * Take a snapshot of an ImageView and save the image into a directory
      * @param imageView
      */
-    private void viewSaveSnapshot(ImageView imageView){
+    private BufferedImage viewSaveSnapshot(ImageView imageView){
         WritableImage writableImage = new WritableImage((int) imageView.getFitWidth(), (int)imageView.getFitHeight());
         imageView.snapshot(null, writableImage);
 
@@ -335,6 +335,8 @@ public class Launcher extends Application {
         saveImageWithSelectDir(bufImageRGB, fileName);
         graphics.dispose();
         System.out.println( "Image saved at: " + fileName);
+        this.imgForFilter = bufImageRGB;
+        return bufImageRGB;
     }
 
     /**
@@ -388,6 +390,59 @@ public class Launcher extends Application {
             }
         }catch (Exception e){
         }
+    }
+
+    /**
+     * Converts a given Image into a BufferedImage
+     *
+     * @param img The Image to be converted
+     * @return The converted BufferedImage
+     */
+    public static BufferedImage toBufferedImage(Image img)
+    {
+        // Create a buffered image with transparency
+        BufferedImage bimage = new BufferedImage((int) img.getWidth(), (int) img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the image on to the buffered image
+        Graphics2D bGr = bimage.createGraphics();
+        bGr.drawImage(bimage, 0, 0, null);
+        bGr.dispose();
+
+        // Return the buffered image
+        return bimage;
+    }
+
+    private BufferedImage mergeImage(ImageView imageView, InputStream stream){
+        BufferedImage large = this.imgForFilter;
+
+        ///System.out.println("path image = " + path);
+        BufferedImage small=null;
+
+        System.out.println(this.getClass().getResource("").toString());
+        try {
+            small = ImageIO.read( new File(this.getClass().getResource("/img/cadre3c.png").toString()));
+
+            //small = ImageIO.read(new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png"));
+        }catch (Exception e){
+            System.out.println(e);
+        }
+
+        int w = Math.max(large.getWidth(), small.getWidth());
+        int h = Math.max(large.getHeight(), small.getHeight());
+
+        BufferedImage combined = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+        // paint both images, preserving the alpha channels
+        Graphics g = combined.getGraphics();
+        g.drawImage(large, 0, 0, null);
+        g.drawImage(small, 0, 0, null);
+
+        //ImageIO.write(combined, "PNG", new File("twoInOne.png"));
+
+        imageView.setImage(SwingFXUtils.toFXImage(combined, null));
+        return combined;
+        //ImageIcon icon1 = new ImageIcon(combined);
+        //jbutton1.setIcon(icon1);
     }
 
     @Override
@@ -524,16 +579,18 @@ public class Launcher extends Application {
         choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
         choiceBoxFilterFramework.setOnAction(event1 -> {
             try {
-
                 System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
                 if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
                     //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
                     InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
                     Image image = new Image(stream);
+                    mergeImage(imageView, stream);
+
                     ImageView imageView3 = new ImageView(image);
                     imageView3.setFitWidth(100);
                     imageView3.setFitHeight(100);
+
                     labelCadre.setTranslateY(-100);
                     labelCadre.setGraphic(imageView3);
                     labelCadre.setVisible(true);
