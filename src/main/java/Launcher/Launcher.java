@@ -20,13 +20,11 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
 import java.io.*;
 
 import javafx.scene.image.*;
@@ -35,7 +33,6 @@ import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 
 import javax.imageio.ImageIO;
-import java.nio.Buffer;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -52,7 +49,7 @@ public class Launcher extends Application {
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     private BorderPane root;
     private Filter filter = new Filter();
-    private String currentFilter;
+    private String currentColorFilter;
     private final FileSelector fileSelectorFilter = new FileSelector();
     private ChoiceBox choiceBox;
     private TextField txtFieldDef;
@@ -64,6 +61,8 @@ public class Launcher extends Application {
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
+    private BufferedImage imgForFilter;
+
     private String currentDirStoragePath;
     //endregion
 
@@ -328,7 +327,7 @@ public class Launcher extends Application {
         Graphics2D graphics = bufImageRGB.createGraphics();
         graphics.drawImage(bufImageARGB, 0, 0, null);
 
-        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter + ".jpg";
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentColorFilter + ".jpg";
         saveImageWithSelectDir(bufImageRGB, fileName);
         graphics.dispose();
         System.out.println( "Image saved at: " + fileName);
@@ -370,6 +369,18 @@ public class Launcher extends Application {
         });
     }
 
+    private void setViewColor(ImageView imageView){
+        refreshImageView(imageView);
+        try {
+            Color filterColor = this.filter.getColor(this.currentColorFilter);
+            if (filterColor != null) {
+                imageView.setEffect(this.filter.filterColor(filterColor));
+            } else {
+                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
+            }
+        }catch (Exception e){
+        }
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -396,7 +407,7 @@ public class Launcher extends Application {
 
         //region create image view & it's label
         final ImageView imageView = new ImageView(); //place for image
-        Label imageLabel = new Label("no text");
+        Label imageLabel = new Label();
 
         ImageView imageView2 = new ImageView();
         //endregion
@@ -467,16 +478,11 @@ public class Launcher extends Application {
             File file = fileSelector.selectFile(primaryStage);
             recognise(file, imageLabel, imageView);
 
-            //apply color filter on load
+            //region apply color filter on load
             if(file != null){
-                try {
-                    Color filterColor = this.filter.setColor(choiceBoxFilterColor.getValue().toString());
-                    if (filterColor != null)
-                        imageView.setEffect(this.filter.filterColor(filterColor));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+                setViewColor(imageView);
             }
+            //endregion
 
         });
         //endregion
@@ -496,12 +502,8 @@ public class Launcher extends Application {
         //region choice box Color filter
         choiceBoxFilterColor.getItems().addAll("No Filter", "Red", "Blue", "Green");
         choiceBoxFilterColor.setOnAction(event1 -> {
-            refreshImageView(imageView);
-            System.out.println("set color filter to " + choiceBoxFilterColor.getValue().toString());
-            Color filterColor = this.filter.setColor(choiceBoxFilterColor.getValue().toString());
-            if (filterColor != null)
-                imageView.setEffect(this.filter.filterColor(filterColor));
-            this.currentFilter = choiceBoxFilterColor.getValue().toString();
+            this.currentColorFilter = choiceBoxFilterColor.getValue().toString();
+            setViewColor(imageView);
         });
         //endregion
 
@@ -562,7 +564,7 @@ public class Launcher extends Application {
             Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
 
             imageView2.setImage(resBottom);
-            Color filterColor = this.filter.setColor(choiceBoxFilterColor.getValue().toString());
+            Color filterColor = this.filter.getColor(choiceBoxFilterColor.getValue().toString());
             if (filterColor != null)
                 imageView2.setEffect(this.filter.filterColor(filterColor));
         });
@@ -586,7 +588,7 @@ public class Launcher extends Application {
 
         //region top - select source panel
         FlowPane sourceSelectPan = new FlowPane();
-        root.setStyle("-fx-background-color: #CDCD5C;");
+        root.setStyle("-fx-background-color: #000;");
 
         sourceSelectPan.getChildren().add(btnSourceCam);
         sourceSelectPan.getChildren().add(selectFileBtn);
@@ -611,7 +613,7 @@ public class Launcher extends Application {
         //region right - image panel
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
-        picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
+        picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
         picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre);
 
         //endregion
@@ -619,7 +621,7 @@ public class Launcher extends Application {
         //region center - cam panel
         FlowPane camPan = new FlowPane(Orientation.VERTICAL);
         //camPan.setPrefWidth(rootWidth/2);
-        camPan.setStyle("-fx-background-color: #CD5CCD;");
+        camPan.setStyle("-fx-background-color: #EEEEEE;");
         camPan.getChildren().addAll( camView, camLabel);
         //endregion
 

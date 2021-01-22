@@ -10,7 +10,7 @@ import javafx.scene.paint.Color;
 
 public class Filter {
 
-    public Color setColor(String typeColor){
+    public Color getColor(String typeColor){
         switch (typeColor){
             case "Red":
                 return Color.RED;
