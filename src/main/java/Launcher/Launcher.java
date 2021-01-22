@@ -60,6 +60,9 @@ public class Launcher extends Application {
     private Label labelCadre = new Label();
     private Label labelTampon = new Label();
 
+    // for florent == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main"
+    private final String pathToResources = "/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main";
+
     //endregion
 
     public static void main(String[] args) {
@@ -376,8 +379,7 @@ public class Launcher extends Application {
      */
     public void setCadre(){
         try {
-            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
+            InputStream stream = new FileInputStream(this.pathToResources + "/img/cadre3c.png");
             Image image = new Image(stream);
             ImageView imageView3 = new ImageView(image);
             imageView3.setFitWidth(100);
@@ -397,8 +399,7 @@ public class Launcher extends Application {
      */
     public void setCadre(String resourcePath){
         try {
-            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main" + resourcePath);
+            InputStream stream = new FileInputStream(this.pathToResources + resourcePath);
             Image image = new Image(stream);
             ImageView imageView3 = new ImageView(image);
             imageView3.setFitWidth(100);
@@ -418,7 +419,7 @@ public class Launcher extends Application {
      */
     public void setStamp(){
         try {
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/certified.png");
+            InputStream stream = new FileInputStream(this.pathToResources + "/img/certified.png");
             Image image = new Image(stream);
             ImageView imageView4 = new ImageView(image);
             imageView4.setFitWidth(30);
@@ -438,7 +439,7 @@ public class Launcher extends Application {
      */
     public void setStamp(String resourcePath){
         try {
-            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main" + resourcePath);
+            InputStream stream = new FileInputStream(this.pathToResources  + resourcePath);
             Image image = new Image(stream);
             ImageView imageView4 = new ImageView(image);
             imageView4.setFitWidth(30);
