@@ -8,25 +8,33 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.effect.Lighting;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+
 import javafx.scene.image.*;
 import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
+import org.bytedeco.javacv.Frame;
+
 import javax.imageio.ImageIO;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,22 +43,25 @@ public class Launcher extends Application {
 
     //region class attributes
     private final FileSelector fileSelector = new FileSelector();
-    private DirectoryChooser directoryChooser;
+    private DirectoryChooser directoryChooser = new DirectoryChooser();
     private Java2DFrameConverter converter = new Java2DFrameConverter();
     private OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     private BorderPane root;
-    Filter filter = new Filter();
-    private final FileSelector fileSelectorFilter = new FileSelector();
+    private Filter filter = new Filter();
+    private String currentColorFilter;
+    private Map<String, String> filterMap = new HashMap<String, String>();
     private ChoiceBox choiceBox;
-    private String currentFilter;
     private TextField txtFieldDef;
-    private String bestLabel;
+
     private ImageRecognition imageRecognition = new ImageRecognition();
     private Matrix matrix = new Matrix();
     private Map<String,Float> allBestLabels;
+    private String bestLabel;
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
+    private BufferedImage imgForFilter;
+
     private String currentDirStoragePath;
     //endregion
 
@@ -114,6 +125,7 @@ public class Launcher extends Application {
             if (frame != null) {
                 WritableImage img = frameToImage(frame);
                 camView.setImage(img);
+                setViewColor(camView);
             }
         } catch (Exception e) {}
     }
@@ -183,7 +195,7 @@ public class Launcher extends Application {
      * @param name  image file's name
      */
     private void saveImageWithSelectDir(BufferedImage image, String name){
-        System.out.println("save in dir : " + this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter);
+        System.out.println("save in dir : " + name);
 
         if (this.getCurrentDirStoragePath()==null){
             File selectedDirectory = selectStorageDir();
@@ -222,8 +234,8 @@ public class Launcher extends Application {
         this.allBestLabels = matrix.getLabelsFromMaxMatrix(copy, imageRecognition.getLabels());
         System.out.println(allBestLabels);
         this.bestLabel = imageRecognition.getImagePotentialLabel(this.allBestLabels);
-        System.out.println(bestLabel);
-        setLabelText(label, bestLabel);
+        System.out.println(this.bestLabel);
+        setLabelText(label, this.bestLabel);
     }
 
     /**
@@ -300,6 +312,44 @@ public class Launcher extends Application {
     }
     //endregion
 
+    //region filters usage functions
+    /**
+     * Take a snapshot of an ImageView and save the image into a directory
+     * @param imageView
+     */
+    private void viewSaveSnapshot(ImageView imageView){
+        WritableImage writableImage = new WritableImage((int) imageView.getFitWidth(), (int)imageView.getFitHeight());
+        imageView.snapshot(null, writableImage);
+
+        BufferedImage bufImageARGB = SwingFXUtils.fromFXImage(writableImage, null);
+        BufferedImage bufImageRGB = new BufferedImage(bufImageARGB.getWidth(), bufImageARGB.getHeight(), BufferedImage.OPAQUE);
+
+        Graphics2D graphics = bufImageRGB.createGraphics();
+        graphics.drawImage(bufImageARGB, 0, 0, null);
+
+        StringBuilder filterApplied = new StringBuilder();
+        for (Map.Entry mapEntry : this.filterMap.entrySet()) {
+            filterApplied.append("_" + mapEntry.getValue());
+        }
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter" + filterApplied.toString() +".jpg";
+        saveImageWithSelectDir(bufImageRGB, fileName);
+        graphics.dispose();
+        System.out.println( "Image saved at: " + fileName);
+    }
+
+    /**
+     * Refresh imageView with last image loaded.
+     * Useful to apply filters on image in real time.
+     * @param imageView => ImageView to refresh
+     */
+    private void refreshImageView(ImageView imageView){
+        if(this.currentImg!=null) {
+            WritableImage writableImage = SwingFXUtils.toFXImage(this.currentImg, null);
+            imageView.setImage(writableImage);
+        }
+    }
+    //endregion
+
     /**
      * Convert a Frame into Writable image.
      * @param frame => a frame, probably get thanks to a camera or video.
@@ -309,6 +359,8 @@ public class Launcher extends Application {
         BufferedImage bufferedImage = converter.getBufferedImage(frame);
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
+
+
 
     /**
      * Set label text value in FX thread.
@@ -321,10 +373,28 @@ public class Launcher extends Application {
         });
     }
 
+    private void setViewColorWithRefresh(ImageView imageView){
+        refreshImageView(imageView);
+        setViewColor(imageView);
+    }
+
+    private void setViewColor(ImageView imageView){
+        try {
+            Color filterColor = this.filter.getColor(this.currentColorFilter);
+            if (filterColor != null) {
+                imageView.setEffect(this.filter.filterColor(filterColor));
+            } else {
+                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
+            }
+        }catch (Exception e){
+        }
+    }
+
     @Override
     public void start(Stage primaryStage) {
         //region initialise all elements
-        primaryStage.setTitle("Hello World!");
+        //region primaryStage setup
+        primaryStage.setTitle("Image identifier");
         primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent t) {
@@ -332,10 +402,11 @@ public class Launcher extends Application {
                 System.exit(0);
             }
         });
+        //endregion
+
         this.root = new BorderPane();
 
         //region create textfield & it's label for image description
-        Button selectFileBtn = new Button();// select button
         this.txtFieldDef = new TextField();
         txtFieldDef.setPromptText("dog, cat ...");
 
@@ -344,34 +415,32 @@ public class Launcher extends Application {
 
         //region create image view & it's label
         final ImageView imageView = new ImageView(); //place for image
-        Label imageLabel = new Label("no text");
+        Label imageLabel = new Label();
+
+        ImageView imageView2 = new ImageView();
         //endregion
 
-        ChoiceBox choiceBox = new ChoiceBox();
-        choiceBox.setValue("Percent confidence");
+        //region filters boxes
+        ChoiceBox choiceBoxPercent = new ChoiceBox(); // choice percentage to allow image save
+        choiceBoxPercent.setValue("Percent confidence");
 
-        ChoiceBox choiceBoxFilter = new ChoiceBox();
-        choiceBoxFilter.setValue("No Filter");
 
-        ChoiceBox choiceBoxFilter2 = new ChoiceBox();
-        choiceBoxFilter2.setValue("No Filter");
+        ChoiceBox choiceBoxFilterColor = new ChoiceBox(); //  choice image color filter
+        choiceBoxFilterColor.setValue("No Filter");
 
-        ChoiceBox choiceBoxFilter3 = new ChoiceBox();
-        choiceBoxFilter3.setValue("No Cadre");
+        ChoiceBox choiceBoxFilterFramework = new ChoiceBox(); // choice image cadre
+        choiceBoxFilterFramework.setValue("No Cadre");
+        //endregion
 
-        Button btn = new Button();// select button
-        this.directoryChooser = new DirectoryChooser();
-
-        Button btnSourcePicsNoIA = new Button();// select button
-        btnSourcePicsNoIA.setText("Image Filter");
 
         //region top panel select buttons
-        Button btnSourceCam = new Button();
-        Button btnSourcePics = new Button();
-
+        Button btnSourceCam = new Button();     // launch cam
+        Button selectFileBtn = new Button();    // select file to open
         this.choiceBox = new ChoiceBox();
-        this.directoryChooser = new DirectoryChooser();
-        Button selectDirBtn = new Button();// select button
+        Button btnSourcePicsNoIA = new Button();// select button
+
+        Button selectDirBtn = new Button();// select dir to store image
+        Button btnSave = new Button();     // save image
         //endregion
 
         //region cam
@@ -384,37 +453,13 @@ public class Launcher extends Application {
 
         //endregion
 
-        // region Create Button select file
-        selectFileBtn.setText("Select a file");
-        selectFileBtn.setOnAction((action) -> {
-            File file = fileSelector.selectFile(primaryStage);
-            recognise(file, imageLabel, imageView);
-            Lighting effectColor = this.filter.filterColor(choiceBoxFilter);
-            if (effectColor != null)
-                imageView.setEffect(effectColor);
-            BufferedImage backImg = SwingFXUtils.fromFXImage(imageView.getImage(), null);
-            saveImageWithSelectDir(backImg,this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter"+this.currentFilter+".jpg");
-        });
-        //endregion
-
-
-        //region select new dir
-        selectDirBtn.setText("Select Dir");
-        selectDirBtn.setOnAction((action) -> {
-            this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
-
-        });
-        //endregion
 
         //region select sources buttons
         //region button select source from cam
         btnSourceCam.setText("Select camera as source");
         btnSourceCam.setOnAction((action) -> {
-            //add all extension for cam (or video)
-            //fileSelector.setExtFilter("video", "*.mp4");
-
             launchCam(camView);
-
+            imageLabel.setText("");
             //region repeat image recognition function
             if (!this.isExecutorLaunched) {
                 TimerTask task = new TimerTask() {
@@ -431,50 +476,57 @@ public class Launcher extends Application {
         });
         //endregion
 
-        //region button select source from pictures
-        btnSourcePics.setText("Select picture as source");
-        btnSourcePics.setOnAction((action) -> {
-            //add all extension for cam (or video)
+        // region Create Button select file
+        selectFileBtn.setText("Select picture as source");
+        selectFileBtn.setOnAction((action) -> {
             fileSelector.setExtFilter("Images", "*.jpeg", "*.jpg");
             closeCam(camView, camLabel);
             this.isExecutorLaunched = false;
 
+            File file = fileSelector.selectFile(primaryStage);
+            recognise(file, imageLabel, imageView);
+
+            //region apply color filter on load
+            if(file != null){
+                setViewColorWithRefresh(imageView);
+            }
+            //endregion
+
         });
+        //endregion
+
         //endregion
 
         //region checkbox percent confidence
-        choiceBox.getItems().addAll("5%", "50%", "60%", "70%","80%","90%","100%");
-        choiceBox.setValue("50%");
-        choiceBox.setOnAction(event1 -> {
-            System.out.println(choiceBox.getValue());
+        choiceBoxPercent.getItems().addAll("5%", "50%", "60%", "70%","80%","90%","100%");
+        choiceBoxPercent.setValue("50%");
+        choiceBoxPercent.setOnAction(event1 -> {
+            System.out.println(choiceBoxPercent.getValue());
         });
         //endregion
 
-        choiceBoxFilter.getItems().addAll("No Filter", "Red", "Blue", "Green");
-        choiceBoxFilter.setOnAction(event -> {
-            this.currentFilter = choiceBoxFilter.getValue().toString();
+
+        //region filters
+        //region choice box Color filter
+        choiceBoxFilterColor.getItems().addAll("No Filter", "Red", "Blue", "Green");
+        choiceBoxFilterColor.setOnAction(event1 -> {
+            this.currentColorFilter = choiceBoxFilterColor.getValue().toString();
+            this.filterMap.put("colorFilter", this.currentColorFilter);
+            if (this.filterMap.containsKey("colorFilter") && this.currentColorFilter.equals("No Filter")){
+                this.filterMap.remove("colorFilter");
+            }
+            setViewColorWithRefresh(imageView);
         });
+        //endregion
 
-        choiceBoxFilter3.getItems().addAll("No Filter", "Classik");
-
-        choiceBoxFilter2.getItems().addAll("No Filter", "Red", "Blue", "Green");
-        ImageView imageView2 = new ImageView();
-
-        btnSourcePicsNoIA.setOnAction(event1 -> {
-            //Get path to Image
-            File file = this.fileSelector.selectFile(primaryStage);
-            String[] pathArr = file.getAbsolutePath().split("/resources");
-            Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
-
-            imageView2.setImage(resBottom);
-            Lighting effectColor = this.filter.filterColor(choiceBoxFilter2);
-            if (effectColor != null)
-                imageView2.setEffect(effectColor);
-        });
+        //region choice box framework filter
         Label labelCadre = new Label();
-        choiceBoxFilter3.setOnAction(event1 -> {
+        choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
+        choiceBoxFilterFramework.setOnAction(event1 -> {
             try {
-                if (this.filter.getCadre(choiceBoxFilter3.getValue().toString()) != null)
+
+                System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
+                if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
                     InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
                     Image image = new Image(stream);
@@ -489,10 +541,53 @@ public class Launcher extends Application {
                 {
                     labelCadre.setVisible(false);
                 }
+                this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+                if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                    this.filterMap.remove("frameworkFilter");
+                }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         });
+        //endregion
+
+
+        //endregion
+
+        //region select new dir to store image
+        selectDirBtn.setText("Select Dir to store");
+        selectDirBtn.setOnAction((action) -> {
+            this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
+        });
+        //endregion
+
+        //region button save
+        btnSave.setText("Save image");
+        btnSave.setOnAction((action) -> {
+            viewSaveSnapshot(imageView);
+        });
+        //endregion
+
+
+
+
+        final Group[] blend = {new Group()};
+
+        //region  image Filter button
+        btnSourcePicsNoIA.setText("Image Filter");
+        btnSourcePicsNoIA.setOnAction(event1 -> {
+            //Get path to Image
+            File file = this.fileSelector.selectFile(primaryStage);
+            String[] pathArr = file.getAbsolutePath().split("/resources");
+            Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
+
+            imageView2.setImage(resBottom);
+            Color filterColor = this.filter.getColor(choiceBoxFilterColor.getValue().toString());
+            if (filterColor != null)
+                imageView2.setEffect(this.filter.filterColor(filterColor));
+        });
+        //endregion
+
 
         //region manage display -- background could change, just used to debug for now
         //region initialize window
@@ -511,41 +606,40 @@ public class Launcher extends Application {
 
         //region top - select source panel
         FlowPane sourceSelectPan = new FlowPane();
-        root.setStyle("-fx-background-color: #CDCD5C;");
+        root.setStyle("-fx-background-color: #000;");
 
         sourceSelectPan.getChildren().add(btnSourceCam);
-        sourceSelectPan.getChildren().add(btnSourcePics);
-        sourceSelectPan.getChildren().add(choiceBox);
-        sourceSelectPan.getChildren().add(choiceBoxFilter);
+        sourceSelectPan.getChildren().add(selectFileBtn);
+        sourceSelectPan.getChildren().add(choiceBoxPercent);
 
         sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
-        sourceSelectPan.getChildren().add(choiceBoxFilter2);
-        sourceSelectPan.getChildren().add(choiceBoxFilter3);
+        sourceSelectPan.getChildren().add(choiceBoxFilterColor);
+        sourceSelectPan.getChildren().add(choiceBoxFilterFramework);
+
         sourceSelectPan.getChildren().add(selectDirBtn);
+        sourceSelectPan.getChildren().add(btnSave);
         //endregion
 
 
         //region left - selectPic button + definition panel
         FlowPane selectionPan = new FlowPane(Orientation.VERTICAL);
         //selectionPan.setPrefWidth(rootWidth/4);
-        selectionPan.getChildren().addAll(selectFileBtn, txtFieldDef, defFieldLabel);
+        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel);
         selectionPan.setStyle("-fx-background-color: #CD5C5C;");
         //endregion
         
-        //region center - image panel
+        //region right - image panel
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
-        picsSelectionPan.setStyle("-fx-background-color: #CD5CCD;");
-        picsSelectionPan.getChildren().addAll( imageView, imageLabel);
+        picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
+        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre);
 
-        picsSelectionPan.getChildren().addAll(imageView2);
-        picsSelectionPan.getChildren().addAll(labelCadre);
         //endregion
 
         //region center - cam panel
         FlowPane camPan = new FlowPane(Orientation.VERTICAL);
         //camPan.setPrefWidth(rootWidth/2);
-        camPan.setStyle("-fx-background-color: #CD5CCD;");
+        camPan.setStyle("-fx-background-color: #EEEEEE;");
         camPan.getChildren().addAll( camView, camLabel);
         //endregion
 
