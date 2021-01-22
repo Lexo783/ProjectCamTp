@@ -22,19 +22,15 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-
 import javafx.scene.image.*;
 import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
-
 import javax.imageio.ImageIO;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -63,6 +59,9 @@ public class Launcher extends Application {
     private BufferedImage imgForFilter;
 
     private String currentDirStoragePath;
+    private Label labelCadre = new Label();
+    private Label labelTampon = new Label();
+
     //endregion
 
     public static void main(String[] args) {
@@ -390,6 +389,38 @@ public class Launcher extends Application {
         }
     }
 
+    public void setCadre(){
+        try {
+            InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
+            Image image = new Image(stream);
+            ImageView imageView3 = new ImageView(image);
+            imageView3.setFitWidth(100);
+            imageView3.setFitHeight(100);
+            labelCadre.setTranslateY(-100);
+            labelCadre.setGraphic(imageView3);
+            labelCadre.setVisible(false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setTampon(){
+        try {
+            InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/certified.png");
+            Image image = new Image(stream);
+            ImageView imageView4 = new ImageView(image);
+            imageView4.setFitWidth(30);
+            imageView4.setFitHeight(30);
+
+            labelTampon.setTranslateY(-145);
+            labelTampon.setTranslateX(60);
+            labelTampon.setGraphic(imageView4);
+            labelTampon.setVisible(false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void start(Stage primaryStage) {
         //region initialise all elements
@@ -430,6 +461,9 @@ public class Launcher extends Application {
 
         ChoiceBox choiceBoxFilterFramework = new ChoiceBox(); // choice image cadre
         choiceBoxFilterFramework.setValue("No Cadre");
+
+        ChoiceBox choiceBoxFilterFrameworkCertified = new ChoiceBox();
+        choiceBoxFilterFrameworkCertified.setValue("No Certif");
         //endregion
 
 
@@ -516,41 +550,46 @@ public class Launcher extends Application {
                 this.filterMap.remove("colorFilter");
             }
             setViewColorWithRefresh(imageView);
+            setViewColorWithRefresh(imageView2);
         });
         //endregion
 
+        setCadre();
+        setTampon();
         //region choice box framework filter
-        Label labelCadre = new Label();
         choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
         choiceBoxFilterFramework.setOnAction(event1 -> {
-            try {
-
-                System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
                 if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
                 {
-                    InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
-                    Image image = new Image(stream);
-                    ImageView imageView3 = new ImageView(image);
-                    imageView3.setFitWidth(100);
-                    imageView3.setFitHeight(100);
-                    labelCadre.setTranslateY(-100);
-                    labelCadre.setGraphic(imageView3);
-                    labelCadre.setVisible(true);
+                    this.labelCadre.setVisible(true);
                 }
                 else
                 {
-                    labelCadre.setVisible(false);
+                    this.labelCadre.setVisible(false);
                 }
                 this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
                 if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
                     this.filterMap.remove("frameworkFilter");
                 }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
         });
         //endregion
 
+        //region choice box framework filter
+        choiceBoxFilterFrameworkCertified.getItems().addAll("No Filter", "Certifié");
+        choiceBoxFilterFrameworkCertified.setOnAction(event1 -> {
+            if (this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()) != null)
+            {
+                this.labelTampon.setVisible(true);
+            }
+            else
+            {
+                this.labelTampon.setVisible(false);
+            }
+            this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+            if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                this.filterMap.remove("frameworkFilter");
+            }
+        });
 
         //endregion
 
@@ -568,11 +607,6 @@ public class Launcher extends Application {
         });
         //endregion
 
-
-
-
-        final Group[] blend = {new Group()};
-
         //region  image Filter button
         btnSourcePicsNoIA.setText("Image Filter");
         btnSourcePicsNoIA.setOnAction(event1 -> {
@@ -587,6 +621,8 @@ public class Launcher extends Application {
                 imageView2.setEffect(this.filter.filterColor(filterColor));
         });
         //endregion
+
+
 
 
         //region manage display -- background could change, just used to debug for now
@@ -615,6 +651,7 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
         sourceSelectPan.getChildren().add(choiceBoxFilterColor);
         sourceSelectPan.getChildren().add(choiceBoxFilterFramework);
+        sourceSelectPan.getChildren().add(choiceBoxFilterFrameworkCertified);
 
         sourceSelectPan.getChildren().add(selectDirBtn);
         sourceSelectPan.getChildren().add(btnSave);
@@ -632,7 +669,7 @@ public class Launcher extends Application {
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
-        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre);
+        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre, labelTampon);
 
         //endregion
 
