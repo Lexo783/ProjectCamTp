@@ -418,26 +418,21 @@ public class Launcher extends Application {
      * Apply a Stamp on a label, that will be displayed over an image
      */
     public void setStamp(){
-        try {
-            InputStream stream = new FileInputStream(this.pathToResources + "/img/certified.png");
-            Image image = new Image(stream);
-            ImageView imageView4 = new ImageView(image);
-            imageView4.setFitWidth(30);
-            imageView4.setFitHeight(30);
-
-            labelTampon.setTranslateY(-145);
-            labelTampon.setTranslateX(60);
-            labelTampon.setGraphic(imageView4);
-            labelTampon.setVisible(false);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        setStamp("/img/certified.png");
     }
 
     /**
      * Apply a Stamp on a label, that will be displayed over an image
      */
     public void setStamp(String resourcePath){
+        setStamp(resourcePath, 0, 0);
+    }
+
+
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(String resourcePath, int x, int y){
         try {
             InputStream stream = new FileInputStream(this.pathToResources  + resourcePath);
             Image image = new Image(stream);
@@ -445,8 +440,8 @@ public class Launcher extends Application {
             imageView4.setFitWidth(30);
             imageView4.setFitHeight(30);
 
-            labelTampon.setTranslateY(-145);
-            labelTampon.setTranslateX(60);
+            labelTampon.setTranslateY(-145 + y);
+            labelTampon.setTranslateX(60 - x);
             labelTampon.setGraphic(imageView4);
             labelTampon.setVisible(true);
         } catch (FileNotFoundException e) {
@@ -465,8 +460,6 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
 
-
-
     /**
      * Set label text value in FX thread.
      * @param label => a label to update
@@ -480,7 +473,13 @@ public class Launcher extends Application {
 
 
 
+    static boolean isInt(String s) {
+        try
+        { int i = Integer.parseInt(s); return true; }
 
+        catch(NumberFormatException er)
+        { return false; }
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -503,6 +502,12 @@ public class Launcher extends Application {
         txtFieldDef.setPromptText("dog, cat ...");
 
         Label defFieldLabel = new Label("image description");
+
+        TextField stampXField = new TextField();
+        stampXField.setPromptText("stamp X value");
+
+        TextField stampYField = new TextField();
+        stampYField.setPromptText("stamp Y value");
         //endregion
 
         //region create image view & it's label
@@ -612,22 +617,22 @@ public class Launcher extends Application {
         //endregion
 
         setCadre();
-        setStamp();
+
         //region choice box framework filter
         choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik", "Or");
         choiceBoxFilterFramework.setOnAction(event1 -> {
-                if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
-                {
-                    setCadre(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
-                }
-                else
-                {
-                    this.labelCadre.setVisible(false);
-                }
-                this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
-                if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
-                    this.filterMap.remove("frameworkFilter");
-                }
+            if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
+            {
+                setCadre(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
+            }
+            else
+            {
+                this.labelCadre.setVisible(false);
+            }
+            this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+            if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                this.filterMap.remove("frameworkFilter");
+            }
         });
         //endregion
 
@@ -636,7 +641,12 @@ public class Launcher extends Application {
         choiceBoxFilterFrameworkCertified.setOnAction(event1 -> {
             if (this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()) != null)
             {
-                setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()));
+                if (isInt(stampXField.getText()) && isInt(stampYField.getText())){
+                    setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()), Integer.parseInt(stampXField.getText()), Integer.parseInt(stampYField.getText()));
+                }
+                else{
+                    setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()));
+                }
             }
             else
             {
@@ -701,10 +711,10 @@ public class Launcher extends Application {
         //region left - selectPic button + definition panel
         FlowPane selectionPan = new FlowPane(Orientation.VERTICAL);
         //selectionPan.setPrefWidth(rootWidth/4);
-        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel);
+        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel, stampXField, stampYField);
         selectionPan.setStyle("-fx-background-color: #CD5C5C;");
         //endregion
-        
+
         //region right - image panel
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
