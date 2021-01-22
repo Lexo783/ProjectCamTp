@@ -45,7 +45,7 @@ public class Launcher extends Application {
     private Filter filter = new Filter();
     private String currentColorFilter;
     private Map<String, String> filterMap = new HashMap<String, String>();
-    private ChoiceBox choiceBox;
+    private ChoiceBox choiceBoxPercent;
     private TextField txtFieldDef;
 
     private ImageRecognition imageRecognition = new ImageRecognition();
@@ -247,10 +247,10 @@ public class Launcher extends Application {
         //region check our definition with labels found
         if (allBestLabels.containsKey(txtFieldDef.getText())){
             System.out.println("IA agree");
-            if(choiceBox.getValue()!=null) {
+            if(choiceBoxPercent.getValue()!=null) {
                 for (Map.Entry mapEntry : allBestLabels.entrySet()) {
                     float probaTF = (Float) mapEntry.getValue() * 100;
-                    int choiceProba = Integer.parseInt(choiceBox.getValue().toString().replaceAll("%", ""));
+                    int choiceProba = Integer.parseInt(choiceBoxPercent.getValue().toString().replaceAll("%", ""));
                     System.out.println(probaTF + " ------------ " + choiceProba);
                     if (probaTF > choiceProba) {
                         System.out.println("callback should  run");
@@ -308,29 +308,10 @@ public class Launcher extends Application {
 
         System.out.println("camera device");
         try {
-
             float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
-            System.out.println("camera device copy success");
-
             updateGetLabels(copy, camLabel);
-            System.out.println("camera device labels success");
-
-
             String name = this.bestLabel + "-" + Math.round(this.allBestLabels.get(this.bestLabel)*100)+"%.jpg";
-
-            if (this.getCurrentDirStoragePath()==null){
-                File selectedDirectory = selectStorageDir();
-                if (selectedDirectory != null) {
-                    this.setCurrentDirStoragePath(selectedDirectory.getPath());
-                    saveImage(this.currentImg, this.getCurrentDirStoragePath() + "/" + name);
-                }
-            }
-            else{
-                saveImage(this.currentImg, this.getCurrentDirStoragePath() + "/" + name);
-            }
-            System.out.println(this.getCurrentDirStoragePath() + "/" + name);
-            //runCheckSaveFunction(() -> saveImageWithSelectDir(this.currentImg, name)); // should run, but don't save, stop at choice.getValue
-            System.out.println("camera device save success");
+            runCheckSaveFunction(() -> saveImageWithSelectDir(this.currentImg, name)); // should run, but don't save, stop at choice.getValue
 
         }catch (Exception e){
             setLabelText(camLabel, "");
@@ -548,7 +529,7 @@ public class Launcher extends Application {
         //endregion
 
         //region filters boxes
-        ChoiceBox choiceBoxPercent = new ChoiceBox(); // choice percentage to allow image save
+        this.choiceBoxPercent = new ChoiceBox(); // choice percentage to allow image save
         choiceBoxPercent.setValue("Percent confidence");
 
 
@@ -566,7 +547,6 @@ public class Launcher extends Application {
         //region top panel select buttons
         Button btnSourceCam = new Button();     // launch cam
         Button selectFileBtn = new Button();    // select file to open
-        this.choiceBox = new ChoiceBox();
 
         Button selectDirBtn = new Button();// select dir to store image
         Button btnSave = new Button();     // save image
