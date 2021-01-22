@@ -251,7 +251,6 @@ public class Launcher extends Application {
                 for (Map.Entry mapEntry : allBestLabels.entrySet()) {
                     float probaTF = (Float) mapEntry.getValue() * 100;
                     int choiceProba = Integer.parseInt(choiceBoxPercent.getValue().toString().replaceAll("%", ""));
-                    System.out.println(probaTF + " ------------ " + choiceProba);
                     if (probaTF > choiceProba) {
                         System.out.println("callback should  run");
 
