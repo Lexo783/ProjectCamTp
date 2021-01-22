@@ -419,9 +419,11 @@ public class Launcher extends Application {
         BufferedImage small=null;
 
         System.out.println(this.getClass().getResource("").toString());
+        
         try {
+            //   small = ImageIO.read( this.getClass().getResource("/img/cadre3c.png"));
             small = ImageIO.read( new File(this.getClass().getResource("/img/cadre3c.png").toString()));
-
+            // small = ImageIO.read( new File(getClass().getResource("img/cadre3c.png").toString()));
             //small = ImageIO.read(new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png"));
         }catch (Exception e){
             System.out.println(e);
