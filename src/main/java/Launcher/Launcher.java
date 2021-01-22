@@ -8,7 +8,6 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -22,19 +21,15 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-
 import javafx.scene.image.*;
 import javafx.stage.WindowEvent;
 import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
-
 import javax.imageio.ImageIO;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,9 +55,14 @@ public class Launcher extends Application {
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private Boolean isExecutorLaunched =false;
     private BufferedImage currentImg;
-    private BufferedImage imgForFilter;
 
     private String currentDirStoragePath;
+    private Label labelCadre = new Label();
+    private Label labelTampon = new Label();
+
+    // for florent == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main"
+    private final String pathToResources = "/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main";
+
     //endregion
 
     public static void main(String[] args) {
@@ -274,7 +274,7 @@ public class Launcher extends Application {
     private void recognise(File file, Label imageLabel, ImageView imageView){
         float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.ConvertByteToTensor(file));
         updateGetLabels(copy, imageLabel);
-        //just try if img set works, it's fine. but seems image have to be in resources dir.
+
         String[] pathArr = file.getAbsolutePath().split("/resources");
         imageView.setImage(new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString()));
         try {
@@ -329,9 +329,9 @@ public class Launcher extends Application {
 
         StringBuilder filterApplied = new StringBuilder();
         for (Map.Entry mapEntry : this.filterMap.entrySet()) {
-            filterApplied.append("_" + mapEntry.getValue());
+            filterApplied.append("_" + mapEntry.getKey() + "(" + mapEntry.getValue() + ")" );
         }
-        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-filter" + filterApplied.toString() +".jpg";
+        String fileName = this.bestLabel + "-" +this.allBestLabels.get(this.bestLabel)*100+"%-" + filterApplied.toString() +".jpg";
         saveImageWithSelectDir(bufImageRGB, fileName);
         graphics.dispose();
         System.out.println( "Image saved at: " + fileName);
@@ -348,6 +348,112 @@ public class Launcher extends Application {
             imageView.setImage(writableImage);
         }
     }
+
+    /**
+     * Refresh an imageView thanks to currentImage, and apply color filter.
+     * @param imageView => ImageView to resfresh
+     */
+    private void setViewColorWithRefresh(ImageView imageView){
+        refreshImageView(imageView);
+        setViewColor(imageView);
+    }
+
+    /**
+     * Set an imageView color filter depending on currentColorFilter.
+     * @param imageView => ImageView to update
+     */
+    private void setViewColor(ImageView imageView){
+        try {
+            Color filterColor = this.filter.getColor(this.currentColorFilter);
+            if (filterColor != null) {
+                imageView.setEffect(this.filter.filterColor(filterColor));
+            } else {
+                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
+            }
+        }catch (Exception e){
+        }
+    }
+
+    /**
+     * Apply a cadre on a label, that will be displayed over an image
+     */
+    public void setCadre(){
+        try {
+            InputStream stream = new FileInputStream(this.pathToResources + "/img/cadre3c.png");
+            Image image = new Image(stream);
+            ImageView imageView3 = new ImageView(image);
+            imageView3.setFitWidth(100);
+            imageView3.setFitHeight(100);
+            labelCadre.setTranslateY(-100);
+            labelCadre.setGraphic(imageView3);
+            labelCadre.setVisible(false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Apply a cadre on a label, that will be displayed over an image.
+     * it will change depending on path given.
+     * @param resourcePath => path from resources Directory
+     */
+    public void setCadre(String resourcePath){
+        try {
+            InputStream stream = new FileInputStream(this.pathToResources + resourcePath);
+            Image image = new Image(stream);
+            ImageView imageView3 = new ImageView(image);
+            imageView3.setFitWidth(100);
+            imageView3.setFitHeight(100);
+            labelCadre.setTranslateY(-100);
+            labelCadre.setGraphic(imageView3);
+            labelCadre.setVisible(true);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(){
+        setStamp("/img/certified.png");
+    }
+
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(String resourcePath){
+        setStamp(resourcePath, 0, 0);
+    }
+
+
+    /**
+     * Apply a Stamp on a label, that will be displayed over an image
+     */
+    public void setStamp(String resourcePath, int x, int y){
+        try {
+            InputStream stream = new FileInputStream(this.pathToResources  + resourcePath);
+            Image image = new Image(stream);
+            ImageView imageView4 = new ImageView(image);
+            imageView4.setFitWidth(30);
+            imageView4.setFitHeight(30);
+
+            if (y>50){
+                y = 50;
+            }
+            if (x>60){
+                x=60;
+            }
+            labelTampon.setTranslateY(-145 - y);
+            labelTampon.setTranslateX(60 - x);
+            labelTampon.setGraphic(imageView4);
+            labelTampon.setVisible(true);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
     //endregion
 
     /**
@@ -360,8 +466,6 @@ public class Launcher extends Application {
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
 
-
-
     /**
      * Set label text value in FX thread.
      * @param label => a label to update
@@ -373,21 +477,14 @@ public class Launcher extends Application {
         });
     }
 
-    private void setViewColorWithRefresh(ImageView imageView){
-        refreshImageView(imageView);
-        setViewColor(imageView);
-    }
 
-    private void setViewColor(ImageView imageView){
-        try {
-            Color filterColor = this.filter.getColor(this.currentColorFilter);
-            if (filterColor != null) {
-                imageView.setEffect(this.filter.filterColor(filterColor));
-            } else {
-                imageView.setEffect(null); // ?filterColor(as null) != null ? don't have same effect
-            }
-        }catch (Exception e){
-        }
+
+    static boolean isInt(String s) {
+        try
+        { int i = Integer.parseInt(s); return true; }
+
+        catch(NumberFormatException er)
+        { return false; }
     }
 
     @Override
@@ -411,13 +508,17 @@ public class Launcher extends Application {
         txtFieldDef.setPromptText("dog, cat ...");
 
         Label defFieldLabel = new Label("image description");
+
+        TextField stampXField = new TextField();
+        stampXField.setPromptText("stamp X value");
+
+        TextField stampYField = new TextField();
+        stampYField.setPromptText("stamp Y value");
         //endregion
 
         //region create image view & it's label
         final ImageView imageView = new ImageView(); //place for image
         Label imageLabel = new Label();
-
-        ImageView imageView2 = new ImageView();
         //endregion
 
         //region filters boxes
@@ -430,6 +531,9 @@ public class Launcher extends Application {
 
         ChoiceBox choiceBoxFilterFramework = new ChoiceBox(); // choice image cadre
         choiceBoxFilterFramework.setValue("No Cadre");
+
+        ChoiceBox choiceBoxFilterFrameworkCertified = new ChoiceBox();
+        choiceBoxFilterFrameworkCertified.setValue("No Certif");
         //endregion
 
 
@@ -437,7 +541,6 @@ public class Launcher extends Application {
         Button btnSourceCam = new Button();     // launch cam
         Button selectFileBtn = new Button();    // select file to open
         this.choiceBox = new ChoiceBox();
-        Button btnSourcePicsNoIA = new Button();// select button
 
         Button selectDirBtn = new Button();// select dir to store image
         Button btnSave = new Button();     // save image
@@ -519,43 +622,52 @@ public class Launcher extends Application {
         });
         //endregion
 
-        //region choice box framework filter
-        Label labelCadre = new Label();
-        choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik");
-        choiceBoxFilterFramework.setOnAction(event1 -> {
-            try {
+        setCadre();
 
-                System.out.println(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
-                if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
-                {
-                    InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
-                    Image image = new Image(stream);
-                    ImageView imageView3 = new ImageView(image);
-                    imageView3.setFitWidth(100);
-                    imageView3.setFitHeight(100);
-                    labelCadre.setTranslateY(-100);
-                    labelCadre.setGraphic(imageView3);
-                    labelCadre.setVisible(true);
-                }
-                else
-                {
-                    labelCadre.setVisible(false);
-                }
-                this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
-                if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
-                    this.filterMap.remove("frameworkFilter");
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+        //region choice box framework filter
+        choiceBoxFilterFramework.getItems().addAll("No Filter", "Classik", "Or");
+        choiceBoxFilterFramework.setOnAction(event1 -> {
+            if (this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()) != null)
+            {
+                setCadre(this.filter.getCadre(choiceBoxFilterFramework.getValue().toString()));
+            }
+            else
+            {
+                this.labelCadre.setVisible(false);
+            }
+            this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+            if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                this.filterMap.remove("frameworkFilter");
             }
         });
         //endregion
 
+        //region choice box framework filter
+        choiceBoxFilterFrameworkCertified.getItems().addAll("No Filter", "Certifié", "Approved");
+        choiceBoxFilterFrameworkCertified.setOnAction(event1 -> {
+            if (this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()) != null)
+            {
+                if (isInt(stampXField.getText()) && isInt(stampYField.getText())){
+                    setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()), Integer.parseInt(stampXField.getText()), Integer.parseInt(stampYField.getText()));
+                }
+                else{
+                    setStamp(this.filter.getCertified(choiceBoxFilterFrameworkCertified.getValue().toString()));
+                }
+            }
+            else
+            {
+                this.labelTampon.setVisible(false);
+            }
+            this.filterMap.put("frameworkFilter", choiceBoxFilterFramework.getValue().toString());
+            if (this.filterMap.containsKey("frameworkFilter") && choiceBoxFilterFramework.getValue().toString().equals("No Filter")){
+                this.filterMap.remove("frameworkFilter");
+            }
+        });
 
         //endregion
 
         //region select new dir to store image
-        selectDirBtn.setText("Select Dir to store");
+        selectDirBtn.setText("Select output Dir");
         selectDirBtn.setOnAction((action) -> {
             this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
         });
@@ -570,25 +682,6 @@ public class Launcher extends Application {
 
 
 
-
-        final Group[] blend = {new Group()};
-
-        //region  image Filter button
-        btnSourcePicsNoIA.setText("Image Filter");
-        btnSourcePicsNoIA.setOnAction(event1 -> {
-            //Get path to Image
-            File file = this.fileSelector.selectFile(primaryStage);
-            String[] pathArr = file.getAbsolutePath().split("/resources");
-            Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
-
-            imageView2.setImage(resBottom);
-            Color filterColor = this.filter.getColor(choiceBoxFilterColor.getValue().toString());
-            if (filterColor != null)
-                imageView2.setEffect(this.filter.filterColor(filterColor));
-        });
-        //endregion
-
-
         //region manage display -- background could change, just used to debug for now
         //region initialize window
         final int rootWidth = 1200;
@@ -599,8 +692,6 @@ public class Launcher extends Application {
         imageView.setFitHeight(100);
         imageView.setFitWidth(100);
 
-        imageView2.setFitHeight(100);
-        imageView2.setFitWidth(100);
 
         //endregion
 
@@ -612,9 +703,9 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(selectFileBtn);
         sourceSelectPan.getChildren().add(choiceBoxPercent);
 
-        sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
         sourceSelectPan.getChildren().add(choiceBoxFilterColor);
         sourceSelectPan.getChildren().add(choiceBoxFilterFramework);
+        sourceSelectPan.getChildren().add(choiceBoxFilterFrameworkCertified);
 
         sourceSelectPan.getChildren().add(selectDirBtn);
         sourceSelectPan.getChildren().add(btnSave);
@@ -624,16 +715,15 @@ public class Launcher extends Application {
         //region left - selectPic button + definition panel
         FlowPane selectionPan = new FlowPane(Orientation.VERTICAL);
         //selectionPan.setPrefWidth(rootWidth/4);
-        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel);
+        selectionPan.getChildren().addAll( txtFieldDef, defFieldLabel, stampXField, stampYField);
         selectionPan.setStyle("-fx-background-color: #CD5C5C;");
         //endregion
-        
+
         //region right - image panel
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
-        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre);
-
+        picsSelectionPan.getChildren().addAll( imageView, labelCadre, labelTampon, imageLabel );
         //endregion
 
         //region center - cam panel

@@ -1,11 +1,7 @@
 package Services;
 
-import javafx.scene.Group;
-import javafx.scene.effect.BlendMode;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 
 public class Filter {
@@ -39,46 +35,24 @@ public class Filter {
         switch (typeCadre){
             case "Classik":
                 System.out.println(this.getClass().getResource("/img/cadre3c.png").toString());
-                return this.getClass().getResource("/img/cadre3c.png").toString();
+                return "/img/cadre3c.png";
             case "Or":
-                return this.getClass().getResource("/img/cadreOr.png").toString();
+                return "/img/cadreOr.png";
             default:
                 return null;
         }
     }
 
-    /**
-     * @deprecated
-     * @param resBottom
-     * @param widthBottom
-     * @param heightBottom
-     * @param cadreTop
-     * @return
-     */
-    public Group filterCadre(ImageView resBottom, double widthBottom, double heightBottom, Image cadreTop)
-    {
-        ImageView top = new ImageView(cadreTop);
-
-        resBottom.setFitWidth(widthBottom);
-        resBottom.setFitHeight(heightBottom);
-
-        top.setFitWidth(resBottom.getFitWidth());
-        top.setFitHeight(resBottom.getFitHeight());
-
-        top.setBlendMode(BlendMode.SRC_OVER);
-        Group blend = new Group(
-                resBottom,
-                top
-        );
-        return blend;
-    }
-
-    public String getStamp(String typeStamp){
-        switch (typeStamp){
+    public String getCertified(String typeCadre){
+        switch (typeCadre){
+            case "Certifié":
+                System.out.println(this.getClass().getResource("/img/certified.png").toString());
+                return "/img/certified.png";
             case "Approved":
-                return this.getClass().getResource("/img/approved.png").toString();
+                return "/img/approved.png";
             default:
                 return null;
         }
     }
+
 }
