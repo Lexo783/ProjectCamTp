@@ -251,8 +251,12 @@ public class Launcher extends Application {
                 for (Map.Entry mapEntry : allBestLabels.entrySet()) {
                     float probaTF = (Float) mapEntry.getValue() * 100;
                     int choiceProba = Integer.parseInt(choiceBox.getValue().toString().replaceAll("%", ""));
+                    System.out.println(probaTF + " ------------ " + choiceProba);
                     if (probaTF > choiceProba) {
+                        System.out.println("callback should  run");
+
                         callback.run();
+                        System.out.println("callback runnned");
                     }
                 }
             }
@@ -302,10 +306,32 @@ public class Launcher extends Application {
         }catch (Exception e){
         }
 
+        System.out.println("camera device");
         try {
+
             float[][] copy = imageRecognition.executeModelFromByteArray(imageRecognition.setByteFile(data));
+            System.out.println("camera device copy success");
+
             updateGetLabels(copy, camLabel);
-            runCheckSaveFunction(() -> saveImageWithSelectDir(this.currentImg, txtFieldDef.getText() + ".jpg"));
+            System.out.println("camera device labels success");
+
+
+            String name = this.bestLabel + "-" + Math.round(this.allBestLabels.get(this.bestLabel)*100)+"%.jpg";
+
+            if (this.getCurrentDirStoragePath()==null){
+                File selectedDirectory = selectStorageDir();
+                if (selectedDirectory != null) {
+                    this.setCurrentDirStoragePath(selectedDirectory.getPath());
+                    saveImage(this.currentImg, this.getCurrentDirStoragePath() + "/" + name);
+                }
+            }
+            else{
+                saveImage(this.currentImg, this.getCurrentDirStoragePath() + "/" + name);
+            }
+            System.out.println(this.getCurrentDirStoragePath() + "/" + name);
+            //runCheckSaveFunction(() -> saveImageWithSelectDir(this.currentImg, name)); // should run, but don't save, stop at choice.getValue
+            System.out.println("camera device save success");
+
         }catch (Exception e){
             setLabelText(camLabel, "");
         }
