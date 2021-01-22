@@ -391,7 +391,8 @@ public class Launcher extends Application {
 
     public void setCadre(){
         try {
-            InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png");
+            //flo == "/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/cadre3c.png"
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/cadre3c.png");
             Image image = new Image(stream);
             ImageView imageView3 = new ImageView(image);
             imageView3.setFitWidth(100);
@@ -406,7 +407,7 @@ public class Launcher extends Application {
 
     public void setTampon(){
         try {
-            InputStream stream = new FileInputStream("/Users/mac/Desktop/Cours/JavaAvance/ProjectCam/build/resources/main/img/certified.png");
+            InputStream stream = new FileInputStream("/Users/gwenael/Documents/cours/L2/janvier_agileTesting_javaAvancee/javaAvLexos/ProjectCamTp/build/resources/main/img/certified.png");
             Image image = new Image(stream);
             ImageView imageView4 = new ImageView(image);
             imageView4.setFitWidth(30);
@@ -447,8 +448,6 @@ public class Launcher extends Application {
         //region create image view & it's label
         final ImageView imageView = new ImageView(); //place for image
         Label imageLabel = new Label();
-
-        ImageView imageView2 = new ImageView();
         //endregion
 
         //region filters boxes
@@ -471,7 +470,6 @@ public class Launcher extends Application {
         Button btnSourceCam = new Button();     // launch cam
         Button selectFileBtn = new Button();    // select file to open
         this.choiceBox = new ChoiceBox();
-        Button btnSourcePicsNoIA = new Button();// select button
 
         Button selectDirBtn = new Button();// select dir to store image
         Button btnSave = new Button();     // save image
@@ -550,7 +548,6 @@ public class Launcher extends Application {
                 this.filterMap.remove("colorFilter");
             }
             setViewColorWithRefresh(imageView);
-            setViewColorWithRefresh(imageView2);
         });
         //endregion
 
@@ -594,7 +591,7 @@ public class Launcher extends Application {
         //endregion
 
         //region select new dir to store image
-        selectDirBtn.setText("Select Dir to store");
+        selectDirBtn.setText("Select output Dir");
         selectDirBtn.setOnAction((action) -> {
             this.setCurrentDirStoragePath(this.selectStorageDir().getPath());
         });
@@ -607,20 +604,6 @@ public class Launcher extends Application {
         });
         //endregion
 
-        //region  image Filter button
-        btnSourcePicsNoIA.setText("Image Filter");
-        btnSourcePicsNoIA.setOnAction(event1 -> {
-            //Get path to Image
-            File file = this.fileSelector.selectFile(primaryStage);
-            String[] pathArr = file.getAbsolutePath().split("/resources");
-            Image resBottom = new Image(this.getClass().getResource(pathArr[pathArr.length-1]).toString());
-
-            imageView2.setImage(resBottom);
-            Color filterColor = this.filter.getColor(choiceBoxFilterColor.getValue().toString());
-            if (filterColor != null)
-                imageView2.setEffect(this.filter.filterColor(filterColor));
-        });
-        //endregion
 
 
 
@@ -635,8 +618,6 @@ public class Launcher extends Application {
         imageView.setFitHeight(100);
         imageView.setFitWidth(100);
 
-        imageView2.setFitHeight(100);
-        imageView2.setFitWidth(100);
 
         //endregion
 
@@ -648,7 +629,6 @@ public class Launcher extends Application {
         sourceSelectPan.getChildren().add(selectFileBtn);
         sourceSelectPan.getChildren().add(choiceBoxPercent);
 
-        sourceSelectPan.getChildren().add(btnSourcePicsNoIA);
         sourceSelectPan.getChildren().add(choiceBoxFilterColor);
         sourceSelectPan.getChildren().add(choiceBoxFilterFramework);
         sourceSelectPan.getChildren().add(choiceBoxFilterFrameworkCertified);
@@ -669,8 +649,7 @@ public class Launcher extends Application {
         FlowPane picsSelectionPan = new FlowPane(Orientation.VERTICAL);
         picsSelectionPan.setPrefWidth(rootWidth);
         picsSelectionPan.setStyle("-fx-background-color: #EEEEEE;");
-        picsSelectionPan.getChildren().addAll( imageView, imageLabel, imageView2, labelCadre, labelTampon);
-
+        picsSelectionPan.getChildren().addAll( imageView, labelCadre, labelTampon, imageLabel );
         //endregion
 
         //region center - cam panel
